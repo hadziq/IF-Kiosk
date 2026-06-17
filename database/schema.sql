@@ -57,13 +57,11 @@ CREATE TABLE jadwal (
   hari        TEXT    NOT NULL CHECK (hari IN ('Senin','Selasa','Rabu','Kamis','Jumat')),
   jam_mulai   TIME    NOT NULL,
   jam_selesai TIME    NOT NULL,
-  kode_kelas  TEXT,
   mata_kuliah TEXT    NOT NULL,
   dosen_id    INTEGER NOT NULL REFERENCES dosen(id) ON DELETE RESTRICT,
   dosen_id_2  INTEGER REFERENCES dosen(id) ON DELETE SET NULL,
   dosen_id_3  INTEGER REFERENCES dosen(id) ON DELETE SET NULL
 );
-
 -- ============================================================
 -- Seed: Ruangan — Lantai 1 (Ruang Kelas)
 -- ============================================================
@@ -117,14 +115,22 @@ INSERT INTO ruangan (nama_ruang, lantai, is_ruang_dosen) VALUES
   ('IF_235', 'Lantai 2', TRUE);
 
 INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
-  ('IF_202',      'Lantai 2', TRUE, 'Mushola'),
-  ('IF_217A',     'Lantai 2', TRUE, 'Ruang Rapat'),
-  ('IF_217B',     'Lantai 2', TRUE, 'Ruang Rapat'),
-  ('IF_222',      'Lantai 2', TRUE, 'Alumni Corner'),
-  ('IF_237',      'Lantai 2', TRUE, 'Mushola'),
+  ('IF_202',  'Lantai 2', TRUE, 'Mushola'),
+  ('IF_217A', 'Lantai 2', TRUE, 'Ruang Rapat'),
+  ('IF_217B', 'Lantai 2', TRUE, 'Ruang Rapat'),
+  ('IF_237',  'Lantai 2', TRUE, 'Mushola');
+
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, is_ruang_dosen, label) VALUES
+   ('IF_222',  'Lantai 2', TRUE, TRUE,'Alumni Corner');
+
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
   ('Lounge',      'Lantai 2', TRUE, 'Lounge'),
   ('Ruang Sidang','Lantai 2', TRUE, 'Ruang Sidang'),
   ('Tata Usaha',  'Lantai 2', TRUE, 'Tata Usaha');
+
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
+  ('SPMB Jatim',      'Lantai 4', TRUE, 'SPMB Jatim'),
+  ('SPMB Surabaya','Lantai 4', TRUE, 'SPMB Surabaya');
 
 -- ============================================================
 -- Seed: Ruangan — Lantai 3 (Laboratorium, Mixed, Ruangan)
@@ -132,28 +138,27 @@ INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
 -- ============================================================
 
 -- Lab only
-INSERT INTO ruangan (nama_ruang, lantai, is_lab) VALUES
-  ('RPL',             'Lantai 3', TRUE),
-  ('KCV',             'Lantai 3', TRUE),
-  ('Alpro',           'Lantai 3', TRUE),
-  ('MCI',             'Lantai 3', TRUE),
-  ('PKT',             'Lantai 3', TRUE),
-  ('Giga',            'Lantai 3', TRUE),
-  ('Jatim',           'Lantai 3', TRUE),
-  ('Lab_Pascasarjana','Lantai 3', TRUE);
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, label) VALUES
+  ('RPL',             'Lantai 3', TRUE, 'Rekayasa Perangkat Lunak'),
+  ('KCV',             'Lantai 3', TRUE, 'Komputasi Cerdas Visi'),
+  ('ALPRO',           'Lantai 3', TRUE, 'Algoritma Pemrograman'),
+  ('MCI',             'Lantai 3', TRUE, 'Manajemen Cerdas Informasi'),
+  ('PKT',             'Lantai 3', TRUE, 'Pemodelan dan Komputasi Terapan'),
+  ('GIGa',            'Lantai 3', TRUE, 'Grafika, Interaksi dan Game'),
+  ('Lab_Pascasarjana','Lantai 3', TRUE, 'Laboratorium Pascasarjana');
 
--- Lab + Ruang Dosen (no kelas)
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_ruang_dosen) VALUES
-  ('KBJ', 'Lantai 3', TRUE, TRUE);
+-- Lab + Ruang Dosen 
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_ruang_dosen, label) VALUES
+  ('KBJ', 'Lantai 3', TRUE, TRUE, 'Komputasi Berbasis Jaringan');
 
 -- Lab + Kelas (no dosen)
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas) VALUES
-  ('LP_1', 'Lantai 3', TRUE, TRUE);
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, label) VALUES
+  ('LP_1', 'Lantai 3', TRUE, TRUE, 'Lab Pemrograman 1');
 
 -- Lab + Kelas + Ruang Dosen
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_ruang_dosen) VALUES
-  ('LP_2',   'Lantai 3', TRUE, TRUE, TRUE),
-  ('Netics', 'Lantai 3', TRUE, TRUE, TRUE);
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_ruang_dosen, label) VALUES
+  ('LP_2',   'Lantai 3', TRUE, TRUE, TRUE, 'Lab Pemrograman 2'),
+  ('NETICS', 'Lantai 3', TRUE, TRUE, TRUE, 'Teknologi Jaringan dan Keamanan Siber Cerdas');
 
 -- Kelas only (auditorium — not a lab)
 INSERT INTO ruangan (nama_ruang, lantai, is_kelas) VALUES
@@ -161,8 +166,8 @@ INSERT INTO ruangan (nama_ruang, lantai, is_kelas) VALUES
 
 -- Label-only rooms
 INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
-  ('HMTC',                 'Lantai 3', TRUE, 'HMTC'),
-  ('Co_Working_Space_IUP', 'Lantai 3', TRUE, 'Co-Working Space IUP');
+  ('Sekretariat MTC', 'Lantai 3', TRUE, 'Sekretariat HMTC'),
+  ('Co Working Space IUP',  'Lantai 3', TRUE, 'Co-Working Space IUP');
 
 -- ============================================================
 -- Seed: Dosen
@@ -216,7 +221,15 @@ INSERT INTO dosen (nama) VALUES
   ('Hudan Studiawan, S.Kom., M.Kom., Ph.D.'),
   ('Dr. Baskoro Adi P., S.Kom., M.Kom.'),
   ('Prof. Ir. Tohari Ahmad, S.Kom., M.IT., Ph.D.'),
-  ('Royyana Muslim Ijtihadie, S.Kom., M.Kom., Ph.D.');
+  ('Royyana Muslim Ijtihadie, S.Kom., M.Kom., Ph.D.'),
+  ('Prof. Amitava Datta, Ph.D.'), 
+  ('Dr. Adhatus Solichah Ahmadiyah, S.Kom., M.Sc.'), 
+  ('Bagus Jati Santoso, S.Kom., Ph.D.'), 
+  ('Abdul Munif, S.Kom., M.Sc.Eng.'), 
+  ('Agus Budi Raharjo, S.Kom., M.Kom., Ph.D.'), 
+  ('Ilham Gurat Adillion, S.Kom., M.Eng.');
+
+
 
 -- ============================================================
 -- Seed: Penghuni Ruangan — Lantai 2
@@ -332,6 +345,11 @@ INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 2 FROM ruangan r, dosen d
   WHERE r.nama_ruang = 'IF_218' AND d.nama = 'Muhammad ''Arif Faizin, S.Kom., M.Kom.';
 
+-- IF_222
+INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
+  SELECT r.id, d.id, 1 FROM ruangan r, dosen d
+  WHERE r.nama_ruang = 'IF_222' AND d.nama = 'Prof. Amitava Datta, Ph.D.';
+
 -- IF_223
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 1 FROM ruangan r, dosen d
@@ -377,7 +395,7 @@ INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
 -- IF_229
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 1 FROM ruangan r, dosen d
-  WHERE r.nama_ruang = 'IF_229' AND d.nama = 'Pak Daniel';
+  WHERE r.nama_ruang = 'IF_229' AND d.nama = 'Prof. Daniel Oranova Siahaan, S.Kom., M.Sc. PD.Eng.';
 
 -- IF_230
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
