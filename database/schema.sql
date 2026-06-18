@@ -166,7 +166,7 @@ INSERT INTO ruangan (nama_ruang, lantai, is_kelas) VALUES
 
 -- Label-only rooms
 INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
-  ('Sekretariat MTC', 'Lantai 3', TRUE, 'Sekretariat HMTC'),
+  ('Sekretariat HMTC', 'Lantai 3', TRUE, 'Sekretariat HMTC'),
   ('Co Working Space IUP',  'Lantai 3', TRUE, 'Co-Working Space IUP');
 
 -- ============================================================
