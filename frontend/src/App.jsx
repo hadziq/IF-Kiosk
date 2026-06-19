@@ -130,8 +130,9 @@ export default function App() {
   const sendStateRef = useRef(null);
   const handleDisconnectRef = useRef(null);
   handleDisconnectRef.current = () => {
+    setActiveRoom(null);
     setActiveFloor("Lantai 1");
-    animateFloorTransition("Lantai 1", () => loadFloorObjMtl("Lantai 1"));
+    loadFloorObjMtl("Lantai 1", true);
   };
 
   const { mobileUrl, phoneConnected, sendState } = useTVWebSocket({

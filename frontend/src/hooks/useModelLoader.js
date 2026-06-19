@@ -258,17 +258,21 @@ export function useModelLoader({
     );
   };
 
-  const loadFloorObjMtl = (floorName) => {
+  const loadFloorObjMtl = (floorName, resetCamera = false) => {
     const { camera, controls, scene } = sceneRef.current;
-    if (camera && controls) {
+    if (!resetCamera && camera && controls) {
       savedCameraRef.current = { position: camera.position.clone(), target: controls.target.clone() };
+    } else {
+      savedCameraRef.current = null;
     }
     const prev = scene?.getObjectByName("__loaded_model__");
     if (prev) prev.visible = false;
     setStatus("loading"); setModelInfo(null); setErrorMsg(""); setView("floors");
 
+    const preserve = !resetCamera;
+
     if (modelCacheRef.current.has(floorName)) {
-      finalizeModel(deepClone(modelCacheRef.current.get(floorName)), true, true, floorName);
+      finalizeModel(deepClone(modelCacheRef.current.get(floorName)), true, preserve, floorName);
       return;
     }
 
@@ -281,7 +285,7 @@ export function useModelLoader({
         ol.setMaterials(mats);
         ol.load(`/models/${floorName}.obj`, (obj) => {
           modelCacheRef.current.set(floorName, deepClone(obj));
-          finalizeModel(obj, true, true, floorName);
+          finalizeModel(obj, true, preserve, floorName);
         }, undefined, onErr);
       },
       undefined,
