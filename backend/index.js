@@ -484,7 +484,7 @@ function getLocalIP() {
 const PORT          = process.env.PORT || 8000;
 const PHONE_IDLE_MS = 1 * 60 * 1000;
 const server = http.createServer(app);
-const wss    = new WebSocketServer({ server });
+const wss    = new WebSocketServer({ server, path: "/ws" });
 
 const sessions = new Map();
 

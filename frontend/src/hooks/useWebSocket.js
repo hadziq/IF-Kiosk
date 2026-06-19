@@ -39,7 +39,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
     let active = true;
 
     function connect() {
-      const ws = new WebSocket(`${WS_URL}?role=tv`);
+      const ws = new WebSocket(`${WS_URL}/ws?role=tv`);
 
       ws.onopen = () => {
         if (!active) { ws.close(); return; }

@@ -149,7 +149,7 @@ export default function MobileControl() {
 
   useEffect(() => {
     if (!sid) return;
-    const ws = new WebSocket(`${backendWsUrl}?role=phone&sid=${sid}`);
+    const ws = new WebSocket(`${backendWsUrl}/ws?role=phone&sid=${sid}`);
     wsRef.current = ws;
     ws.onopen    = () => setConnected(true);
     ws.onclose   = () => setConnected(false);
