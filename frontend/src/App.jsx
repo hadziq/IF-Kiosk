@@ -128,9 +128,16 @@ export default function App() {
 
   // ── WebSocket (sync state to phone on connect) ────────────────────
   const sendStateRef = useRef(null);
+  const handleDisconnectRef = useRef(null);
+  handleDisconnectRef.current = () => {
+    setActiveFloor("Lantai 1");
+    animateFloorTransition("Lantai 1", () => loadFloorObjMtl("Lantai 1"));
+  };
+
   const { mobileUrl, phoneConnected, sendState } = useTVWebSocket({
-    onCmd:          (action, payload) => handleCmdRef.current(action, payload),
-    onPhoneConnect: () => sendStateRef.current(),
+    onCmd:             (action, payload) => handleCmdRef.current(action, payload),
+    onPhoneConnect:    () => sendStateRef.current(),
+    onPhoneDisconnect: () => handleDisconnectRef.current(),
   });
 
   sendStateRef.current = () => {
@@ -141,15 +148,22 @@ export default function App() {
   useEffect(() => { sendStateRef.current(); }, [view, activeFloor, modelInfo]);
 
   // ── Room data fetch (single call: flags + occupants + schedules) ──
-  useEffect(() => {
-    if (!activeRoom) { setRoomData(null); setSchedLoading(false); setSchedError(""); return; }
-
-    setRoomData(null); setSchedLoading(true); setSchedError("");
-
-    fetch(`${API_URL}/api/rooms/${encodeURIComponent(activeRoom)}`)
+  const fetchRoomData = (room, showLoading) => {
+    if (!room) { setRoomData(null); setSchedLoading(false); setSchedError(""); return; }
+    if (showLoading) { setRoomData(null); setSchedLoading(true); setSchedError(""); }
+    fetch(`${API_URL}/api/rooms/${encodeURIComponent(room)}`)
       .then((r) => r.ok ? r.json() : null)
       .catch(() => null)
       .then((data) => { setRoomData(data); setSchedLoading(false); });
+  };
+
+  useEffect(() => { fetchRoomData(activeRoom, true); }, [activeRoom]);
+
+  // Auto-refresh room data every 30s so admin changes appear on the kiosk
+  useEffect(() => {
+    if (!activeRoom) return;
+    const id = setInterval(() => fetchRoomData(activeRoom, false), 30000);
+    return () => clearInterval(id);
   }, [activeRoom]);
 
   // ── Load TC model on mount ────────────────────────────────────────
@@ -186,6 +200,23 @@ export default function App() {
         )}
 
         <QROverlay mobileUrl={mobileUrl} phoneConnected={phoneConnected} />
+
+        {view === "rooms" && activeFloor && activeFloor !== "Lantai 1" && status === "success" && (
+          <div style={{
+            position: "absolute", bottom: "20px", right: "20px",
+            background: "rgba(8,9,15,0.9)", border: `1px solid ${C.green}`,
+            boxShadow: `0 0 12px rgba(0,230,118,0.3)`,
+            borderRadius: "8px", padding: "10px 16px",
+            display: "flex", alignItems: "center", gap: "8px",
+            backdropFilter: "blur(8px)",
+            fontFamily: "'DM Mono', monospace",
+          }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: C.green, boxShadow: `0 0 8px ${C.green}`, flexShrink: 0 }} />
+            <span style={{ fontSize: "12px", color: C.green, letterSpacing: "0.5px" }}>
+              Anda berada di Lantai 1
+            </span>
+          </div>
+        )}
       </div>
 
       <SchedulePanel

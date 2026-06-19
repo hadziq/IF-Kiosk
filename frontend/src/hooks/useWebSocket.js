@@ -14,10 +14,11 @@ const WS_URL = `${window.location.protocol === "https:" ? "wss" : "ws"}://${wind
  *   - phoneConnected: true while a phone is paired to this session
  *   - sendState:      call this to push current app state to the phone
  */
-export function useTVWebSocket({ onCmd, onPhoneConnect }) {
+export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
   const wsRef          = useRef(null);
   const onCmdRef       = useRef(onCmd);
   const onConnectRef   = useRef(onPhoneConnect);
+  const onDisconnectRef = useRef(onPhoneDisconnect);
   const retryRef       = useRef(null);
 
   const [mobileUrl,      setMobileUrl]      = useState("");
@@ -26,6 +27,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect }) {
   // keep callbacks fresh on every render without re-running the effect
   onCmdRef.current     = onCmd;
   onConnectRef.current = onPhoneConnect;
+  onDisconnectRef.current = onPhoneDisconnect;
 
   const sendState = (state) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -58,6 +60,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect }) {
         }
         if (msg.type === "phoneDisconnected") {
           setPhoneConnected(false);
+          onDisconnectRef.current?.();
         }
         if (msg.type === "cmd") {
           onCmdRef.current?.(msg.action, msg.payload);

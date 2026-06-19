@@ -67,7 +67,7 @@ export function Sidebar({
         <p style={{ fontSize: "9px", letterSpacing: "3px", color: "#ffffff", textTransform: "uppercase", marginBottom: "4px" }}>Teknik Informatika</p>
         <p style={{ fontSize: "20px", fontWeight: "700", margin: 0, letterSpacing: "2px", lineHeight: 1.2, textShadow: `0 0 16px ${C.cyan}` }}>
           <span style={{ color: C.cyan }}>IF </span>
-          <span style={{ color: C.cyan }}>QIOSK</span>
+          <span style={{ color: C.cyan }}>Kiosk</span>
         </p> 
       </div>    
 
@@ -95,9 +95,6 @@ export function Sidebar({
           </button>
           <div>
             {sidebarLabel(activeFloor || "Ruangan")}
-            <p style={{ fontSize: "10px", color: C.muted, letterSpacing: "1px" }}>
-              {groupMeshNames(modelInfo?.meshNames?.filter(n => !EXCLUDE.test(n)) || []).length} ruangan terdeteksi
-            </p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {modelInfo?.meshNames?.length > 0 ? (
@@ -127,11 +124,6 @@ export function Sidebar({
         </div>
       )}
 
-      {/* controls hint */}
-      <div style={{ marginTop: "auto", fontSize: "10px", color: C.muted, lineHeight: "2", letterSpacing: "0.5px", borderTop: `1px solid ${C.border}`, paddingTop: "12px" }}>
-        <p style={{ margin: "0 0 4px", color: C.sub, letterSpacing: "1px", fontSize: "9px", textTransform: "uppercase" }}>Kontrol</p>
-        Drag Kiri — orbit · Drag Kanan — pan<br />Scroll — zoom
-      </div>
     </div>
   );
 }

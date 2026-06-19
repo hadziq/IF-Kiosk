@@ -242,7 +242,7 @@ export default function MobileControl() {
           <p style={{ fontSize: "8px", letterSpacing: "3px", color: "#ffffff", textTransform: "uppercase", margin: "0 0 2px" }}>Teknik Informatika</p>
           <p style={{ fontSize: "18px", fontWeight: "700", margin: 0, letterSpacing: "2px", textShadow: `0 0 16px ${C.cyan}` }}>
             <span style={{ color: C.cyan }}>IF </span>
-            <span style={{ color: C.cyan }}>QIOSK</span>
+            <span style={{ color: C.cyan }}>Kiosk</span>
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -311,7 +311,8 @@ export default function MobileControl() {
               const floor = item.lantai ?? null;
               const isDosen = item.result_type === "dosen";
               const isRoom  = item.result_type === "room";
-              const accentColor = isDosen ? C.cyan : C.green;
+              const isReservasi = item.result_type === "reservasi";
+              const accentColor = isReservasi ? C.green : isDosen ? C.cyan : C.green;
               return (
                 <button
                   key={i}
@@ -342,7 +343,19 @@ export default function MobileControl() {
                     )}
                   </div>
 
-                  {isRoom ? null : isDosen ? (
+                  {isReservasi ? (
+                    <>
+                      <span style={{ fontSize: "13px", color: C.text, letterSpacing: "0.3px" }}>{item.keterangan || "Reservasi"}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        {item.nama_dosen && (
+                          <span style={{ fontSize: "11px", color: C.text }}>▸ {item.nama_dosen}</span>
+                        )}
+                        <span style={{ fontSize: "10px", color: C.muted, marginLeft: "auto" }}>
+                          {item.jam_mulai?.slice(0, 5)}–{item.jam_selesai?.slice(0, 5)}
+                        </span>
+                      </div>
+                    </>
+                  ) : isRoom ? null : isDosen ? (
                     item.occupants?.length > 0 ? (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         {item.occupants.map((name, j) => (
@@ -353,7 +366,7 @@ export default function MobileControl() {
                       </div>
                     ) : (
                       <span style={{ fontSize: "12px", color: C.sub, letterSpacing: "0.5px" }}>
-                        {item.label || displayName(item.room_name)}
+                        {item.keterangan || displayName(item.room_name)}
                       </span>
                     )
                   ) : (
@@ -407,8 +420,10 @@ export default function MobileControl() {
               <p style={{ fontSize: "10px", letterSpacing: "2px", color: C.cyan, margin: "0 0 4px", textTransform: "uppercase", textShadow: `0 0 8px ${C.cyan}` }}>
                 {tvView === "floors" ? "Pilih Lantai" : (tvFloor || "Ruangan")}
               </p>
-              {tvView === "rooms" && (
-                <p style={{ fontSize: "10px", color: C.muted, letterSpacing: "1px", margin: 0 }}>{rooms.length} ruangan terdeteksi</p>
+{tvView === "rooms" && (
+                <p style={{ fontSize: "11px", color: C.sub, letterSpacing: "0.3px", margin: "4px 0 0", fontStyle: "italic" }}>
+                  Pilih salah satu ruangan untuk menyorotnya di layar utama
+                </p>
               )}
             </div>
 

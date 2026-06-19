@@ -23,6 +23,86 @@ export function useModelLoader({
   const originalMaterials = useRef({});
   const savedCameraRef    = useRef(null);
   const modelCacheRef     = useRef(new Map());
+  const markerRef         = useRef(null);
+  const modelSizeRef      = useRef(null);
+
+  const removeMarker = () => {
+    if (markerRef.current) {
+      sceneRef.current.scene?.remove(markerRef.current);
+      markerRef.current = null;
+    }
+  };
+
+  const addYouAreHereMarker = () => {
+    removeMarker();
+    const { scene } = sceneRef.current;
+    const model = scene?.getObjectByName("__loaded_model__");
+    if (!model) return;
+
+    let tvMesh = null;
+    model.traverse((child) => { if (child.isMesh && child.name === "TV") tvMesh = child; });
+    if (!tvMesh) return;
+
+    model.updateMatrixWorld(true);
+    const tvBox = new THREE.Box3().setFromObject(tvMesh);
+    const tvCenter = tvBox.getCenter(new THREE.Vector3());
+    const tvSize = tvBox.getSize(new THREE.Vector3());
+
+    const s = Math.max(tvSize.x, tvSize.z) * 0.8;
+    const group = new THREE.Group();
+    group.name = "__you_are_here__";
+
+    const pinMat = new THREE.MeshBasicMaterial({ color: 0x4d82ff });
+
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(s * 0.5, s * 1.5, 16), pinMat);
+    cone.rotation.x = Math.PI;
+    cone.position.y = s * 0.75;
+    group.add(cone);
+
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(s * 0.6, 16, 16), pinMat);
+    sphere.position.y = s * 1.8;
+    group.add(sphere);
+
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(s * 0.25, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffffff }),
+    );
+    dot.position.y = s * 1.8;
+    group.add(dot);
+
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(s * 0.6, s * 0.9, 32),
+      new THREE.MeshBasicMaterial({ color: 0x4d82ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.02;
+    group.add(ring);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    ctx.font = "bold 48px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeStyle = "rgba(0,0,0,0.8)";
+    ctx.lineWidth = 6;
+    ctx.strokeText("Anda berada di sini", 256, 64);
+    ctx.fillStyle = "#4d82ff";
+    ctx.fillText("Anda berada di sini", 256, 64);
+
+    const label = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false }),
+    );
+    label.scale.set(s * 6, s * 1.5, 1);
+    label.position.y = s * 3;
+    group.add(label);
+
+    group.position.copy(tvCenter);
+    group.position.y = tvBox.max.y;
+    scene.add(group);
+    markerRef.current = group;
+  };
 
   const deepClone = (obj) => {
     const clone = obj.clone(true);
@@ -80,7 +160,7 @@ export function useModelLoader({
     });
   };
 
-  const finalizeModel = (model, switchToRooms = true, preserveCamera = false) => {
+  const finalizeModel = (model, switchToRooms = true, preserveCamera = false, floorName = null) => {
     if (floorAnimRef.current) {
       cancelAnimationFrame(floorAnimRef.current);
       floorAnimRef.current  = null;
@@ -88,6 +168,7 @@ export function useModelLoader({
     }
 
     const { scene, camera, controls } = sceneRef.current;
+    removeMarker();
     const prev = scene.getObjectByName("__loaded_model__");
     if (prev) scene.remove(prev);
     originalMaterials.current = {};
@@ -110,6 +191,8 @@ export function useModelLoader({
     model.position.sub(center);
     model.position.y += size.y / 2;
     scene.add(model);
+
+    modelSizeRef.current = size;
 
     const dist = Math.max(size.x, size.y, size.z) * 1.8;
     camera.position.set(dist, dist * 0.5, 0);
@@ -148,6 +231,9 @@ export function useModelLoader({
       lastActiveFloorRef.current = null;
       animateTCIntro(lf);
     }
+
+    if (floorName === "Lantai 1") addYouAreHereMarker();
+
     setStatus("success");
   };
 
@@ -182,7 +268,7 @@ export function useModelLoader({
     setStatus("loading"); setModelInfo(null); setErrorMsg(""); setView("floors");
 
     if (modelCacheRef.current.has(floorName)) {
-      finalizeModel(deepClone(modelCacheRef.current.get(floorName)), true, true);
+      finalizeModel(deepClone(modelCacheRef.current.get(floorName)), true, true, floorName);
       return;
     }
 
@@ -195,7 +281,7 @@ export function useModelLoader({
         ol.setMaterials(mats);
         ol.load(`/models/${floorName}.obj`, (obj) => {
           modelCacheRef.current.set(floorName, deepClone(obj));
-          finalizeModel(obj, true, true);
+          finalizeModel(obj, true, true, floorName);
         }, undefined, onErr);
       },
       undefined,

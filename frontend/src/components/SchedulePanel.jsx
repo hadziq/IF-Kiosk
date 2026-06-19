@@ -65,7 +65,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
     </div>
   );
 
-  const { lantai, is_kelas, is_lab, is_ruang_dosen, is_ruangan, label, occupants } = roomData;
+  const { lantai, is_kelas, is_lab, is_ruang_dosen, is_ruangan, is_reservable, keterangan, occupants, reservations } = roomData;
 
   // Label-only room (Mushola, Ruang Rapat, Alumni Corner, etc.)
   if (is_ruangan && !is_lab && !is_kelas && !is_ruang_dosen) return (
@@ -78,7 +78,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
         <p style={{ fontSize: "13px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{lantai ?? "—"}</p>
       </div>
       <div style={{ flex: 1, padding: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ fontSize: "14px", color: C.sub, letterSpacing: "1px" }}>{label ?? displayName(roomName)}</p>
+        <p style={{ fontSize: "14px", color: C.sub, letterSpacing: "1px" }}>{keterangan ?? displayName(roomName)}</p>
       </div>
     </div>
   );
@@ -96,8 +96,8 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
           <p style={{ fontSize: "12px", letterSpacing: "2px", color: topColor, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${topColor}` }}>
             {topLabel}
           </p>
-          {label && <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 4px", letterSpacing: "1px" }}>{label}</p>}
-          {!label && <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 4px", letterSpacing: "1px" }}>{displayName(roomName)}</p>}
+          {keterangan && <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 4px", letterSpacing: "1px" }}>{keterangan}</p>}
+          {!keterangan && <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 4px", letterSpacing: "1px" }}>{displayName(roomName)}</p>}
           <p style={{ fontSize: "13px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{lantai ?? "—"}</p>
         </div>
       )}
@@ -134,8 +134,35 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
         </>
       )}
 
+      {/* Reservations section — only shown when there are reservations today */}
+      {is_reservable && reservations?.length > 0 && (
+        <>
+          <div style={{ padding: "20px 16px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${C.green}`, background: `linear-gradient(90deg, ${C.green}0d 0%, transparent 100%)`, flexShrink: 0 }}>
+            <p style={{ fontSize: "12px", letterSpacing: "2px", color: C.green, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${C.green}` }}>
+              Reservasi Hari Ini
+            </p>
+            {!topLabel && !is_kelas && (
+              <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 6px", letterSpacing: "1px" }}>{displayName(roomName)}</p>
+            )}
+          </div>
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            {reservations.map((rv) => (
+              <div key={rv.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.green}`, borderRadius: "6px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ background: `${C.green}26`, border: `1px solid ${C.green}66`, borderRadius: "4px", padding: "3px 9px", fontSize: "13px", color: "#d0dcff", fontWeight: "400", letterSpacing: "0.3px" }}>
+                    {trimSecs(rv.jam_mulai)} – {trimSecs(rv.jam_selesai)}
+                  </span>
+                </div>
+                <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: 0 }}>{rv.keterangan || rv.nama_dosen}</p>
+                {rv.keterangan && <p style={{ fontSize: "13px", color: C.text, margin: 0 }}>▸ {rv.nama_dosen}</p>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* Fill remaining space for non-kelas rooms */}
-      {!is_kelas && <div style={{ flex: 1 }} />}
+      {!is_kelas && !reservations?.length && <div style={{ flex: 1 }} />}
     </div>
   );
 }

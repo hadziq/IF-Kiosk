@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS penghuni_ruangan;
 DROP TABLE IF EXISTS ruang_dosen;
 DROP TABLE IF EXISTS dosen;
 DROP TABLE IF EXISTS ruangan_kelas;
+DROP TABLE IF EXISTS reservasi;
 DROP TABLE IF EXISTS ruangan;
 
 -- ============================================================
@@ -27,7 +28,8 @@ CREATE TABLE ruangan (
   is_lab         BOOLEAN NOT NULL DEFAULT FALSE,
   is_ruang_dosen BOOLEAN NOT NULL DEFAULT FALSE,
   is_ruangan     BOOLEAN NOT NULL DEFAULT FALSE,
-  label          TEXT
+  is_reservable  BOOLEAN NOT NULL DEFAULT FALSE,
+  keterangan     TEXT
 );
 
 -- ============================================================
@@ -49,6 +51,21 @@ CREATE TABLE penghuni_ruangan (
 );
 
 -- ============================================================
+-- Reservasi — room bookings by admin
+-- ============================================================
+DROP TABLE IF EXISTS reservasi;
+CREATE TABLE reservasi (
+  id            SERIAL  PRIMARY KEY,
+  ruangan_id    INTEGER NOT NULL REFERENCES ruangan(id) ON DELETE CASCADE,
+  dosen_id      INTEGER NOT NULL REFERENCES dosen(id)   ON DELETE CASCADE,
+  tanggal       DATE    NOT NULL,
+  jam_mulai     TIME    NOT NULL,
+  jam_selesai   TIME    NOT NULL,
+  keterangan    TEXT,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================================
 -- Jadwal (Kelas) — references ruangan directly
 -- ============================================================
 CREATE TABLE jadwal (
@@ -65,20 +82,20 @@ CREATE TABLE jadwal (
 -- ============================================================
 -- Seed: Ruangan — Lantai 1 (Ruang Kelas)
 -- ============================================================
-INSERT INTO ruangan (nama_ruang, lantai, is_kelas) VALUES
-  ('IF_101', 'Lantai 1', TRUE),
-  ('IF_102', 'Lantai 1', TRUE),
-  ('IF_103', 'Lantai 1', TRUE),
-  ('IF_104', 'Lantai 1', TRUE),
-  ('IF_105', 'Lantai 1', TRUE),
-  ('IF_106', 'Lantai 1', TRUE),
-  ('IF_107', 'Lantai 1', TRUE),
-  ('IF_108', 'Lantai 1', TRUE),
-  ('IF_109', 'Lantai 1', TRUE),
-  ('IF_110', 'Lantai 1', TRUE),
-  ('IF_111', 'Lantai 1', TRUE),
-  ('IF_112', 'Lantai 1', TRUE),
-  ('IF_113', 'Lantai 1', TRUE);
+INSERT INTO ruangan (nama_ruang, lantai, is_kelas, is_reservable) VALUES
+  ('IF_101', 'Lantai 1', TRUE, TRUE),
+  ('IF_102', 'Lantai 1', TRUE, TRUE),
+  ('IF_103', 'Lantai 1', TRUE, TRUE),
+  ('IF_104', 'Lantai 1', TRUE, TRUE),
+  ('IF_105', 'Lantai 1', TRUE, TRUE),
+  ('IF_106', 'Lantai 1', TRUE, TRUE),
+  ('IF_107', 'Lantai 1', TRUE, TRUE),
+  ('IF_108', 'Lantai 1', TRUE, TRUE),
+  ('IF_109', 'Lantai 1', TRUE, TRUE),
+  ('IF_110', 'Lantai 1', TRUE, TRUE),
+  ('IF_111', 'Lantai 1', TRUE, TRUE),
+  ('IF_112', 'Lantai 1', TRUE, TRUE),
+  ('IF_113', 'Lantai 1', TRUE, TRUE);
 
 -- ============================================================
 -- Seed: Ruangan — Lantai 2 (Ruang Dosen & Ruangan)
@@ -114,21 +131,21 @@ INSERT INTO ruangan (nama_ruang, lantai, is_ruang_dosen) VALUES
   ('IF_234', 'Lantai 2', TRUE),
   ('IF_235', 'Lantai 2', TRUE);
 
-INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
   ('IF_202',  'Lantai 2', TRUE, 'Mushola'),
   ('IF_217A', 'Lantai 2', TRUE, 'Ruang Rapat'),
   ('IF_217B', 'Lantai 2', TRUE, 'Ruang Rapat'),
   ('IF_237',  'Lantai 2', TRUE, 'Mushola');
 
-INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, is_ruang_dosen, label) VALUES
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, is_ruang_dosen, keterangan) VALUES
    ('IF_222',  'Lantai 2', TRUE, TRUE,'Alumni Corner');
 
-INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
   ('Lounge',      'Lantai 2', TRUE, 'Lounge'),
   ('Ruang Sidang','Lantai 2', TRUE, 'Ruang Sidang'),
   ('Tata Usaha',  'Lantai 2', TRUE, 'Tata Usaha');
 
-INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
   ('SPMB Jatim',      'Lantai 4', TRUE, 'SPMB Jatim'),
   ('SPMB Surabaya','Lantai 4', TRUE, 'SPMB Surabaya');
 
@@ -138,34 +155,34 @@ INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
 -- ============================================================
 
 -- Lab only
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, label) VALUES
-  ('RPL',             'Lantai 3', TRUE, 'Rekayasa Perangkat Lunak'),
-  ('KCV',             'Lantai 3', TRUE, 'Komputasi Cerdas Visi'),
-  ('ALPRO',           'Lantai 3', TRUE, 'Algoritma Pemrograman'),
-  ('MCI',             'Lantai 3', TRUE, 'Manajemen Cerdas Informasi'),
-  ('PKT',             'Lantai 3', TRUE, 'Pemodelan dan Komputasi Terapan'),
-  ('GIGa',            'Lantai 3', TRUE, 'Grafika, Interaksi dan Game'),
-  ('Lab_Pascasarjana','Lantai 3', TRUE, 'Laboratorium Pascasarjana');
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_reservable, keterangan) VALUES
+  ('RPL',             'Lantai 3', TRUE, TRUE, 'Rekayasa Perangkat Lunak'),
+  ('KCV',             'Lantai 3', TRUE, TRUE, 'Komputasi Cerdas Visi'),
+  ('ALPRO',           'Lantai 3', TRUE, TRUE, 'Algoritma Pemrograman'),
+  ('MCI',             'Lantai 3', TRUE, TRUE, 'Manajemen Cerdas Informasi'),
+  ('PKT',             'Lantai 3', TRUE, TRUE, 'Pemodelan dan Komputasi Terapan'),
+  ('GIGa',            'Lantai 3', TRUE, TRUE, 'Grafika, Interaksi dan Game'),
+  ('Lab_Pascasarjana','Lantai 3', TRUE, TRUE, 'Laboratorium Pascasarjana');
 
 -- Lab + Ruang Dosen 
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_ruang_dosen, label) VALUES
-  ('KBJ', 'Lantai 3', TRUE, TRUE, 'Komputasi Berbasis Jaringan');
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_ruang_dosen, is_reservable, keterangan) VALUES
+  ('KBJ', 'Lantai 3', TRUE, TRUE, TRUE, 'Komputasi Berbasis Jaringan');
 
 -- Lab + Kelas (no dosen)
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, label) VALUES
-  ('LP_1', 'Lantai 3', TRUE, TRUE, 'Lab Pemrograman 1');
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_reservable, keterangan) VALUES
+  ('LP_1', 'Lantai 3', TRUE, TRUE, TRUE, 'Lab Pemrograman 1');
 
 -- Lab + Kelas + Ruang Dosen
-INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_ruang_dosen, label) VALUES
-  ('LP_2',   'Lantai 3', TRUE, TRUE, TRUE, 'Lab Pemrograman 2'),
-  ('NETICS', 'Lantai 3', TRUE, TRUE, TRUE, 'Teknologi Jaringan dan Keamanan Siber Cerdas');
+INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_ruang_dosen, is_reservable, keterangan) VALUES
+  ('LP_2',   'Lantai 3', TRUE, TRUE, TRUE, TRUE, 'Lab Pemrograman 2'),
+  ('NETICS', 'Lantai 3', TRUE, TRUE, TRUE, TRUE, 'Teknologi Jaringan dan Keamanan Siber Cerdas');
 
 -- Kelas only (auditorium — not a lab)
-INSERT INTO ruangan (nama_ruang, lantai, is_kelas) VALUES
-  ('Aula Handayani', 'Lantai 3', TRUE);
+INSERT INTO ruangan (nama_ruang, lantai, is_kelas, is_reservable) VALUES
+  ('Aula Handayani', 'Lantai 3', TRUE, TRUE);
 
 -- Label-only rooms
-INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, label) VALUES
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
   ('Sekretariat HMTC', 'Lantai 3', TRUE, 'Sekretariat HMTC'),
   ('Co Working Space IUP',  'Lantai 3', TRUE, 'Co-Working Space IUP');
 

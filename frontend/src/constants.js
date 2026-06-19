@@ -28,7 +28,8 @@ export const C = {
   sub:       "#6a7890",
 };
 
-export const EXCLUDE = /pillar|box|lantai|tangga|pintu|sebelah/i;
+export const EXCLUDE = /pillar|box|TV|lantai|tangga|pintu|sebelah/i;
+
 
 export const groupMeshNames = (names) => {
   const seen = new Set();

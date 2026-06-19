@@ -7,5 +7,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: true,   // listen on 0.0.0.0 so phones on same LAN can reach it
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
   },
+  appType: "spa",
 })
