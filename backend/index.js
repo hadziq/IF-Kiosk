@@ -518,6 +518,10 @@ wss.on("connection", (ws, req) => {
 
   } else if (role === "phone" && sid && sessions.has(sid)) {
     const session  = sessions.get(sid);
+    if (session.phone && session.phone.readyState === WebSocket.OPEN) {
+      ws.close(1000, "session already in use");
+      return;
+    }
     session.phone  = ws;
 
     if (session.tv?.readyState === 1) {
