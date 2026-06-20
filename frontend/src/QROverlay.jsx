@@ -9,10 +9,11 @@ const greenGlow = "0 0 12px rgba(0,230,118,0.3)";
 const wrapStyle = {
   position: "absolute",
   bottom: "20px",
-  left: "20px",
+  left: "50%",
+  transform: "translateX(-50%)",
   backdropFilter: "blur(8px)",
   borderRadius: "8px",
-  padding: "14px",
+  padding: "20px",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -40,9 +41,14 @@ export function QROverlay({ mobileUrl, phoneConnected }) {
           background: GREEN, boxShadow: greenGlow,
           flexShrink: 0,
         }} />
-        <p style={{ fontSize: "11px", color: GREEN, letterSpacing: "1px", margin: 0 }}>
-          Smartphone terhubung
-        </p>
+        <div>
+          <p style={{ fontSize: "11px", color: GREEN, letterSpacing: "1px", margin: 0 }}>
+            Smartphone terhubung
+          </p>
+          <p style={{ fontSize: "9px", color: "rgba(255,80,100,0.8)", letterSpacing: "0.5px", margin: "4px 0 0" }}>
+            Sesi terputus otomatis setelah 1 menit tidak aktif
+          </p>
+        </div>
       </div>
     );
   }
@@ -58,13 +64,13 @@ export function QROverlay({ mobileUrl, phoneConnected }) {
     }}>
       <QRCodeSVG
         value={mobileUrl}
-        size={120}
+        size={200}
         bgColor="transparent"
         fgColor="#ffffff"
         level="M"
       />
       <p style={{
-        fontSize: "10px", color: CYAN, letterSpacing: "1.5px",
+        fontSize: "14px", color: CYAN, letterSpacing: "1.5px",
         textTransform: "uppercase", margin: 0,
         textShadow: `0 0 8px ${CYAN}`,
       }}>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Search, X, LoaderCircle, CheckCircle, ChevronRight } from "lucide-react";
 import { C, DAYS, FLOORS, EXCLUDE, displayName } from "./constants";
 
 const JS_DAY_TO_ID = ["", ...DAYS, ""];
@@ -212,14 +213,14 @@ export default function MobileControl() {
     <div style={{ height: "100dvh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", padding: "20px", gap: "12px" }}>
       {!sid ? (
         <>
-          <p style={{ fontSize: "28px", opacity: 0.3, margin: 0 }}>⟳</p>
+          <LoaderCircle size={28} style={{ opacity: 0.3 }} />
           <p style={{ color: C.sub, fontSize: "13px", letterSpacing: "1px", margin: 0, textAlign: "center" }}>
             URL tidak valid. Scan ulang QR code.
           </p>
         </>
       ) : (
         <>
-          <p style={{ fontSize: "28px", opacity: 0.4, margin: 0 }}>✓</p>
+          <CheckCircle size={28} style={{ opacity: 0.4 }} />
           <p style={{ color: C.sub, fontSize: "13px", letterSpacing: "1px", margin: 0, textAlign: "center" }}>
             Sesi berakhir.
           </p>
@@ -270,7 +271,7 @@ export default function MobileControl() {
       {/* Search bar */}
       <div style={{ padding: "10px 16px 0", flexShrink: 0 }}>
         <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: "28px", pointerEvents: "none" }}>⌕</span>
+          <Search size={20} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: C.muted, pointerEvents: "none" }} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -286,7 +287,7 @@ export default function MobileControl() {
             }}
           />
           {query && (
-            <button onClick={() => setQuery("")} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: C.muted, fontSize: "14px", cursor: "pointer", padding: "4px" }}>✕</button>
+            <button onClick={() => setQuery("")} style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: C.muted, cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}><X size={18} /></button>
           )}
         </div>
       </div>
@@ -299,7 +300,7 @@ export default function MobileControl() {
           <>
             {searchLoading && (
               <p style={{ fontSize: "11px", color: C.cyan, letterSpacing: "1px", margin: "8px 0" }}>
-                <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</span> Mencari...
+                <LoaderCircle size={14} style={{ animation: "spin 1s linear infinite" }} /> Mencari...
               </p>
             )}
             {!searchLoading && searchResults.length === 0 && (
@@ -348,7 +349,7 @@ export default function MobileControl() {
                       <span style={{ fontSize: "13px", color: C.text, letterSpacing: "0.3px" }}>{item.keterangan || "Reservasi"}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                         {item.nama_dosen && (
-                          <span style={{ fontSize: "11px", color: C.text }}>▸ {item.nama_dosen}</span>
+                          <span style={{ fontSize: "11px", color: C.text, display: "inline-flex", alignItems: "center", gap: "2px" }}><ChevronRight size={12} /> {item.nama_dosen}</span>
                         )}
                         <span style={{ fontSize: "10px", color: C.muted, marginLeft: "auto" }}>
                           {item.jam_mulai?.slice(0, 5)}–{item.jam_selesai?.slice(0, 5)}
@@ -359,8 +360,8 @@ export default function MobileControl() {
                     item.occupants?.length > 0 ? (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         {item.occupants.map((name, j) => (
-                          <span key={j} style={{ fontSize: "11px", color: C.sub }}>
-                            ▸ {name}
+                          <span key={j} style={{ fontSize: "11px", color: C.sub, display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                            <ChevronRight size={12} /> {name}
                           </span>
                         ))}
                       </div>
@@ -381,13 +382,13 @@ export default function MobileControl() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                         {item.nama_dosen && (
-                          <span style={{ fontSize: "11px", color: C.text }}>▸ {item.nama_dosen}</span>
+                          <span style={{ fontSize: "11px", color: C.text, display: "inline-flex", alignItems: "center", gap: "2px" }}><ChevronRight size={12} /> {item.nama_dosen}</span>
                         )}
                         {item.nama_dosen_2 && (
-                          <span style={{ fontSize: "11px", color: C.text }}>▸ {item.nama_dosen_2}</span>
+                          <span style={{ fontSize: "11px", color: C.text, display: "inline-flex", alignItems: "center", gap: "2px" }}><ChevronRight size={12} /> {item.nama_dosen_2}</span>
                         )}
                         {item.nama_dosen_3 && (
-                          <span style={{ fontSize: "11px", color: C.text }}>▸ {item.nama_dosen_3}</span>
+                          <span style={{ fontSize: "11px", color: C.text, display: "inline-flex", alignItems: "center", gap: "2px" }}><ChevronRight size={12} /> {item.nama_dosen_3}</span>
                         )}
                         <span style={{ fontSize: "10px", color: C.muted, marginLeft: "auto" }}>
                           {item.jam_mulai}–{item.jam_selesai}
@@ -406,13 +407,14 @@ export default function MobileControl() {
           <>
             {tvView === "rooms" && (
               <button onClick={() => { setAwaitingRooms(false); send("back"); }} style={{
-                padding: "10px 16px", background: "transparent",
+                padding: "12px 16px", background: "transparent",
                 border: `1px solid ${C.border}`, borderRadius: "8px",
-                color: C.sub, fontSize: "12px", cursor: "pointer",
+                color: C.sub, fontSize: "14px", cursor: "pointer",
                 textAlign: "left", letterSpacing: "0.5px",
                 fontFamily: "'DM Mono', monospace", width: "100%",
+                alignItems: "center", gap: "8px",
               }}>
-                ← Kembali
+                <ArrowLeft size={22} strokeWidth={2.5} /> Kembali
               </button>
             )}
 
@@ -435,7 +437,7 @@ export default function MobileControl() {
 
             {tvView === "floors" && awaitingRooms && (
               <p style={{ fontSize: "12px", color: C.cyan, letterSpacing: "1px", textAlign: "center", marginTop: "24px", textShadow: `0 0 8px ${C.cyan}` }}>
-                ⟳ Memuat lantai...
+                <LoaderCircle size={14} style={{ animation: "spin 1s linear infinite", display: "inline-block" }} /> Memuat lantai...
               </p>
             )}
 
