@@ -30,6 +30,8 @@ export function QROverlay({ mobileUrl, phoneConnected }) {
     return (
       <div style={{
         ...wrapStyle,
+        left: "20px",
+        transform: "none",
         flexDirection: "row",
         padding: "10px 16px",
         background: "rgba(8,9,15,0.9)",

@@ -412,7 +412,7 @@ export default function MobileControl() {
                 color: C.sub, fontSize: "14px", cursor: "pointer",
                 textAlign: "left", letterSpacing: "0.5px",
                 fontFamily: "'DM Mono', monospace", width: "100%",
-                alignItems: "center", gap: "8px",
+                display: "flex", alignItems: "center", gap: "4px",
               }}>
                 <ArrowLeft size={22} strokeWidth={2.5} /> Kembali
               </button>

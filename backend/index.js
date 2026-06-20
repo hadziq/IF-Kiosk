@@ -86,26 +86,28 @@ app.get("/api/search", async (req, res) => {
     const day = (req.query.day || "").trim();
     if (q.length < 2) return res.json([]);
 
-    const schedParams = [`%${q}%`];
-    const dayClause   = day ? `AND j.hari = $2` : "";
-    if (day) schedParams.push(day);
+    const dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const todayName = day || dayNames[new Date().getDay()];
+    const isWeekday = ['Senin','Selasa','Rabu','Kamis','Jumat'].includes(todayName);
 
-    const schedResult = await db.query(
-      `SELECT r.nama_ruang AS room_name, r.lantai, 'schedule' AS result_type,
-              j.hari, j.jam_mulai, j.jam_selesai, j.mata_kuliah,
-              d.nama AS nama_dosen, d2.nama AS nama_dosen_2, d3.nama AS nama_dosen_3,
-              NULL::text[] AS occupants, NULL::text AS keterangan
-       FROM jadwal j
-       JOIN ruangan r ON j.ruangan_id = r.id
-       LEFT JOIN dosen d  ON j.dosen_id   = d.id
-       LEFT JOIN dosen d2 ON j.dosen_id_2 = d2.id
-       LEFT JOIN dosen d3 ON j.dosen_id_3 = d3.id
-       WHERE (j.mata_kuliah ILIKE $1 OR d.nama ILIKE $1 OR d2.nama ILIKE $1 OR d3.nama ILIKE $1)
-       ${dayClause}
-       ORDER BY r.nama_ruang, j.jam_mulai
-       LIMIT 50`,
-      schedParams
-    );
+    const schedResult = isWeekday
+      ? await db.query(
+          `SELECT r.nama_ruang AS room_name, r.lantai, 'schedule' AS result_type,
+                  j.hari, j.jam_mulai, j.jam_selesai, j.mata_kuliah,
+                  d.nama AS nama_dosen, d2.nama AS nama_dosen_2, d3.nama AS nama_dosen_3,
+                  NULL::text[] AS occupants, NULL::text AS keterangan
+           FROM jadwal j
+           JOIN ruangan r ON j.ruangan_id = r.id
+           LEFT JOIN dosen d  ON j.dosen_id   = d.id
+           LEFT JOIN dosen d2 ON j.dosen_id_2 = d2.id
+           LEFT JOIN dosen d3 ON j.dosen_id_3 = d3.id
+           WHERE (j.mata_kuliah ILIKE $1 OR d.nama ILIKE $1 OR d2.nama ILIKE $1 OR d3.nama ILIKE $1)
+           AND j.hari = $2
+           ORDER BY r.nama_ruang, j.jam_mulai
+           LIMIT 50`,
+          [`%${q}%`, todayName]
+        )
+      : { rows: [] };
 
     const dosenResult = await db.query(
       `SELECT DISTINCT ON (r.nama_ruang)
