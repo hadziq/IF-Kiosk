@@ -89,6 +89,65 @@ function Checkbox({ label, checked, onChange }) {
   );
 }
 
+function SearchableSelect({ value, onChange, options, placeholder = "Pilih...", emptyValue = "" }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const selected = options.find((opt) => String(opt.value) === String(value));
+
+  useEffect(() => {
+    setQuery(selected?.label || "");
+  }, [selected?.label]);
+
+  useEffect(() => {
+    const onDocMouseDown = (e) => {
+      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, []);
+
+  const filtered = options.filter((opt) => opt.label.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <input
+        value={query}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          const next = e.target.value;
+          setQuery(next);
+          setOpen(true);
+          if (selected?.label !== next) onChange(emptyValue);
+        }}
+        placeholder={placeholder}
+        style={S.input}
+      />
+      {open && (
+        <div style={{ position: "absolute", zIndex: 1200, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: "180px", overflowY: "auto", background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px", boxShadow: "0 12px 24px rgba(0,0,0,0.35)" }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: "9px 10px", color: C.muted, fontSize: "12px" }}>Tidak ada pilihan</div>
+          ) : filtered.map((opt) => (
+            <button
+              key={String(opt.value)}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(opt.value);
+                setQuery(opt.label);
+                setOpen(false);
+              }}
+              style={{ width: "100%", padding: "9px 10px", background: String(opt.value) === String(value) ? C.cyanDim : "transparent", border: "none", borderBottom: `1px solid ${C.border}`, color: C.text, cursor: "pointer", textAlign: "left", fontSize: "12px", fontFamily: "'DM Mono', monospace" }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Modal({ title, onClose, children }) {
   return (
     <div
@@ -241,10 +300,12 @@ function RuanganForm({ initial, onSave, onClose }) {
         <input value={form.nama_ruang} onChange={(e) => set("nama_ruang", e.target.value)} style={S.input} />
       </Field>
       <Field label="Lantai">
-        <select value={form.lantai || ""} onChange={(e) => set("lantai", e.target.value)} style={S.select}>
-          <option value="">-</option>
-          {FLOORS.map((f) => <option key={f} value={f}>{f}</option>)}
-        </select>
+        <SearchableSelect
+          value={form.lantai || ""}
+          onChange={(value) => set("lantai", value)}
+          options={FLOORS.map((f) => ({ value: f, label: f }))}
+          placeholder="Pilih lantai..."
+        />
       </Field>
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
         <Checkbox label="Kelas" checked={form.is_kelas} onChange={(e) => set("is_kelas", e.target.checked)} />
@@ -459,18 +520,21 @@ function JadwalForm({ initial, rooms, dosen, onSave, onClose }) {
   return (
     <Modal title={form.id ? "Edit Jadwal" : "Tambah Jadwal"} onClose={onClose}>
       <Field label="Ruangan">
-        <select value={form.ruangan_id} onChange={(e) => set("ruangan_id", Number(e.target.value))} style={S.select}>
-          <option value="">-- Pilih Ruangan --</option>
-          {rooms.filter((r) => r.is_kelas).map((r) => (
-            <option key={r.id} value={r.id}>{r.nama_ruang}</option>
-          ))}
-        </select>
+        <SearchableSelect
+          value={form.ruangan_id}
+          onChange={(value) => set("ruangan_id", value ? Number(value) : "")}
+          options={rooms.filter((r) => r.is_kelas).map((r) => ({ value: r.id, label: r.nama_ruang }))}
+          placeholder="Pilih ruangan..."
+        />
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
         <Field label="Hari">
-          <select value={form.hari} onChange={(e) => set("hari", e.target.value)} style={S.select}>
-            {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.hari}
+            onChange={(value) => set("hari", value)}
+            options={DAYS.map((d) => ({ value: d, label: d }))}
+            placeholder="Pilih hari..."
+          />
         </Field>
         <Field label="Jam Mulai">
           <input type="time" value={form.jam_mulai} onChange={(e) => set("jam_mulai", e.target.value)} style={S.input} />
@@ -483,23 +547,29 @@ function JadwalForm({ initial, rooms, dosen, onSave, onClose }) {
         <input value={form.mata_kuliah} onChange={(e) => set("mata_kuliah", e.target.value)} style={S.input} />
       </Field>
       <Field label="Dosen Utama">
-        <select value={form.dosen_id} onChange={(e) => set("dosen_id", Number(e.target.value))} style={S.select}>
-          <option value="">-- Pilih Dosen --</option>
-          {dosen.map((d) => <option key={d.id} value={d.id}>{d.nama}</option>)}
-        </select>
+        <SearchableSelect
+          value={form.dosen_id}
+          onChange={(value) => set("dosen_id", value ? Number(value) : "")}
+          options={dosen.map((d) => ({ value: d.id, label: d.nama }))}
+          placeholder="Pilih dosen..."
+        />
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
         <Field label="Dosen 2 (opsional)">
-          <select value={form.dosen_id_2} onChange={(e) => set("dosen_id_2", e.target.value ? Number(e.target.value) : "")} style={S.select}>
-            <option value="">-</option>
-            {dosen.map((d) => <option key={d.id} value={d.id}>{d.nama}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.dosen_id_2}
+            onChange={(value) => set("dosen_id_2", value ? Number(value) : "")}
+            options={dosen.map((d) => ({ value: d.id, label: d.nama }))}
+            placeholder="Pilih dosen..."
+          />
         </Field>
         <Field label="Dosen 3 (opsional)">
-          <select value={form.dosen_id_3} onChange={(e) => set("dosen_id_3", e.target.value ? Number(e.target.value) : "")} style={S.select}>
-            <option value="">-</option>
-            {dosen.map((d) => <option key={d.id} value={d.id}>{d.nama}</option>)}
-          </select>
+          <SearchableSelect
+            value={form.dosen_id_3}
+            onChange={(value) => set("dosen_id_3", value ? Number(value) : "")}
+            options={dosen.map((d) => ({ value: d.id, label: d.nama }))}
+            placeholder="Pilih dosen..."
+          />
         </Field>
       </div>
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
@@ -589,26 +659,20 @@ function PenghuniTab() {
       {editing && (
         <Modal title={editing.id ? "Edit Penghuni" : "Tambah Penghuni"} onClose={() => setEditing(null)}>
           <Field label="Ruangan">
-            <select
+            <SearchableSelect
               value={editing.ruangan_id}
-              onChange={(e) => setEditing((f) => ({ ...f, ruangan_id: Number(e.target.value) }))}
-              style={S.select}
-            >
-              <option value="">-- Pilih Ruangan --</option>
-              {rooms.filter((r) => r.is_ruang_dosen).map((r) => (
-                <option key={r.id} value={r.id}>{r.nama_ruang}</option>
-              ))}
-            </select>
+              onChange={(value) => setEditing((f) => ({ ...f, ruangan_id: value ? Number(value) : "" }))}
+              options={rooms.filter((r) => r.is_ruang_dosen).map((r) => ({ value: r.id, label: r.nama_ruang }))}
+              placeholder="Pilih ruangan..."
+            />
           </Field>
           <Field label="Dosen">
-            <select
+            <SearchableSelect
               value={editing.dosen_id}
-              onChange={(e) => setEditing((f) => ({ ...f, dosen_id: Number(e.target.value) }))}
-              style={S.select}
-            >
-              <option value="">-- Pilih Dosen --</option>
-              {dosen.map((d) => <option key={d.id} value={d.id}>{d.nama}</option>)}
-            </select>
+              onChange={(value) => setEditing((f) => ({ ...f, dosen_id: value ? Number(value) : "" }))}
+              options={dosen.map((d) => ({ value: d.id, label: d.nama }))}
+              placeholder="Pilih dosen..."
+            />
           </Field>
           <Field label="Urutan">
             <input
@@ -745,12 +809,12 @@ function ReservasiTab() {
             </div>
           )}
           <Field label="Ruangan">
-            <select value={editing.ruangan_id} onChange={(e) => setEditing((f) => ({ ...f, ruangan_id: Number(e.target.value) }))} style={S.select}>
-              <option value="">-- Pilih Ruangan --</option>
-              {reservableRooms.map((r) => (
-                <option key={r.id} value={r.id}>{r.nama_ruang}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={editing.ruangan_id}
+              onChange={(value) => setEditing((f) => ({ ...f, ruangan_id: value ? Number(value) : "" }))}
+              options={reservableRooms.map((r) => ({ value: r.id, label: r.nama_ruang }))}
+              placeholder="Pilih ruangan..."
+            />
           </Field>
           <Field label="Tanggal">
             <input type="date" value={editing.tanggal} onChange={(e) => setEditing((f) => ({ ...f, tanggal: e.target.value }))} style={S.input} />
@@ -764,10 +828,12 @@ function ReservasiTab() {
             </Field>
           </div>
           <Field label="Dosen">
-            <select value={editing.dosen_id} onChange={(e) => setEditing((f) => ({ ...f, dosen_id: Number(e.target.value) }))} style={S.select}>
-              <option value="">-- Pilih Dosen --</option>
-              {dosen.map((d) => <option key={d.id} value={d.id}>{d.nama}</option>)}
-            </select>
+            <SearchableSelect
+              value={editing.dosen_id}
+              onChange={(value) => setEditing((f) => ({ ...f, dosen_id: value ? Number(value) : "" }))}
+              options={dosen.map((d) => ({ value: d.id, label: d.nama }))}
+              placeholder="Pilih dosen..."
+            />
           </Field>
           <Field label="Keterangan">
             <input value={editing.keterangan || ""} onChange={(e) => setEditing((f) => ({ ...f, keterangan: e.target.value }))} style={S.input} />

@@ -158,7 +158,6 @@ INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
 INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_reservable, keterangan) VALUES
   ('RPL',             'Lantai 3', TRUE, TRUE, 'Rekayasa Perangkat Lunak'),
   ('KCV',             'Lantai 3', TRUE, TRUE, 'Komputasi Cerdas Visi'),
-  ('ALPRO',           'Lantai 3', TRUE, TRUE, 'Algoritma Pemrograman'),
   ('MCI',             'Lantai 3', TRUE, TRUE, 'Manajemen Cerdas Informasi'),
   ('PKT',             'Lantai 3', TRUE, TRUE, 'Pemodelan dan Komputasi Terapan'),
   ('GIGa',            'Lantai 3', TRUE, TRUE, 'Grafika, Interaksi dan Game'),
@@ -166,7 +165,8 @@ INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_reservable, keterangan) VALU
 
 -- Lab + Ruang Dosen 
 INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_ruang_dosen, is_reservable, keterangan) VALUES
-  ('KBJ', 'Lantai 3', TRUE, TRUE, TRUE, 'Komputasi Berbasis Jaringan');
+  ('KBJ', 'Lantai 3', TRUE, TRUE, TRUE, 'Komputasi Berbasis Jaringan'),
+  ('ALPRO','Lantai 3', TRUE, TRUE,TRUE, 'Algoritma Pemrograman');
 
 -- Lab + Kelas (no dosen)
 INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_reservable, keterangan) VALUES
@@ -239,14 +239,11 @@ INSERT INTO dosen (nama) VALUES
   ('Dr. Baskoro Adi P., S.Kom., M.Kom.'),
   ('Prof. Ir. Tohari Ahmad, S.Kom., M.IT., Ph.D.'),
   ('Royyana Muslim Ijtihadie, S.Kom., M.Kom., Ph.D.'),
-  ('Prof. Amitava Datta, Ph.D.'), 
   ('Dr. Adhatus Solichah Ahmadiyah, S.Kom., M.Sc.'), 
   ('Bagus Jati Santoso, S.Kom., Ph.D.'), 
   ('Abdul Munif, S.Kom., M.Sc.Eng.'), 
   ('Agus Budi Raharjo, S.Kom., M.Kom., Ph.D.'), 
   ('Ilham Gurat Adillion, S.Kom., M.Eng.');
-
-
 
 -- ============================================================
 -- Seed: Penghuni Ruangan — Lantai 2
@@ -289,9 +286,6 @@ INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
 -- IF_207
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 1 FROM ruangan r, dosen d
-  WHERE r.nama_ruang = 'IF_207' AND d.nama = 'Prof. Daniel Oranova Siahaan, S.Kom., M.Sc. PD.Eng.';
-INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
-  SELECT r.id, d.id, 2 FROM ruangan r, dosen d
   WHERE r.nama_ruang = 'IF_207' AND d.nama = 'Fajar Baskoro, S.Kom., MT.';
 
 -- IF_208
@@ -392,6 +386,9 @@ INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 1 FROM ruangan r, dosen d
   WHERE r.nama_ruang = 'IF_226' AND d.nama = 'Dini Adni Navastara, S.Kom., M.Sc.';
+INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
+  SELECT r.id, d.id, 2 FROM ruangan r, dosen d
+  WHERE r.nama_ruang = 'IF_226' AND d.nama = 'Dr. Adhatus Solichah Ahmadiyah, S.Kom., M.Sc.';
 
 -- IF_227
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
@@ -474,3 +471,8 @@ INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 1 FROM ruangan r, dosen d
   WHERE r.nama_ruang = 'LP_2' AND d.nama = 'Royyana Muslim Ijtihadie, S.Kom., M.Kom., Ph.D.';
+
+--  ALPRO
+INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
+  SELECT r.id, d.id, 1 FROM ruangan r, dosen d
+  WHERE r.nama_ruang = 'ALPRO' AND d.nama = 'Agus Budi Raharjo, S.Kom., M.Kom., Ph.D.';

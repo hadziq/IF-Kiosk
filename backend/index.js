@@ -35,7 +35,7 @@ app.get("/api/rooms/:roomName", async (req, res) => {
     const [occupantsResult, schedResult, reservasiResult] = await Promise.all([
       room.is_ruang_dosen
         ? db.query(
-            `SELECT d.nama FROM penghuni_ruangan pr
+            `SELECT d.id, d.nama FROM penghuni_ruangan pr
              JOIN dosen d ON pr.dosen_id = d.id
              WHERE pr.ruangan_id = $1 ORDER BY pr.urutan`,
             [room.id]
@@ -73,7 +73,7 @@ app.get("/api/rooms/:roomName", async (req, res) => {
 
     res.json({
       ...room,
-      occupants: occupantsResult.rows.map((r) => r.nama),
+      occupants: occupantsResult.rows,
       schedules: schedResult.rows,
       reservations: reservasiResult.rows,
     });
