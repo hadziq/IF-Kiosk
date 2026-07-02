@@ -2,7 +2,8 @@ import { useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader }    from "three/examples/jsm/loaders/OBJLoader";
 import { MTLLoader }    from "three/examples/jsm/loaders/MTLLoader";
-import { getExt } from "../constants";
+import { C, getExt } from "../constants";
+import { applyDefaultCameraView, getMarkerDefaultCameraView } from "../cameraView";
 
 export function useModelLoader({
   sceneRef,
@@ -24,6 +25,7 @@ export function useModelLoader({
   const savedCameraRef    = useRef(null);
   const modelCacheRef     = useRef(new Map());
   const markerRef         = useRef(null);
+  const markerSizeRef     = useRef(null);
   const modelSizeRef      = useRef(null);
 
   const removeMarker = () => {
@@ -37,11 +39,11 @@ export function useModelLoader({
     removeMarker();
     const { scene } = sceneRef.current;
     const model = scene?.getObjectByName("__loaded_model__");
-    if (!model) return;
+    if (!model) return null;
 
     let tvMesh = null;
     model.traverse((child) => { if (child.isMesh && child.name === "TV") tvMesh = child; });
-    if (!tvMesh) return;
+    if (!tvMesh) return null;
 
     model.updateMatrixWorld(true);
     const tvBox = new THREE.Box3().setFromObject(tvMesh);
@@ -52,7 +54,7 @@ export function useModelLoader({
     const group = new THREE.Group();
     group.name = "__you_are_here__";
 
-    const pinMat = new THREE.MeshBasicMaterial({ color: 0x4d82ff });
+    const pinMat = new THREE.MeshBasicMaterial({ color: 0x26328f });
 
     const cone = new THREE.Mesh(new THREE.ConeGeometry(s * 0.5, s * 1.5, 16), pinMat);
     cone.rotation.x = Math.PI;
@@ -72,7 +74,7 @@ export function useModelLoader({
 
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(s * 0.6, s * 0.9, 32),
-      new THREE.MeshBasicMaterial({ color: 0x4d82ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ color: 0x26328f, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
@@ -88,7 +90,7 @@ export function useModelLoader({
     ctx.strokeStyle = "rgba(0,0,0,0.8)";
     ctx.lineWidth = 6;
     ctx.strokeText("Anda berada di sini", 256, 64);
-    ctx.fillStyle = "#4d82ff";
+    ctx.fillStyle = C.blue;
     ctx.fillText("Anda berada di sini", 256, 64);
 
     const label = new THREE.Sprite(
@@ -102,6 +104,22 @@ export function useModelLoader({
     group.position.y = tvBox.max.y;
     scene.add(group);
     markerRef.current = group;
+    markerSizeRef.current = s;
+
+    return getMarkerDefaultCameraView(group.position, s, modelSizeRef.current);
+  };
+
+  const applyMarkerCameraView = (mode = "disconnected") => {
+    const { camera, controls } = sceneRef.current;
+    if (!camera || !controls || !markerRef.current || !markerSizeRef.current) return;
+
+    const view = getMarkerDefaultCameraView(
+      markerRef.current.position,
+      markerSizeRef.current,
+      modelSizeRef.current,
+      mode,
+    );
+    applyDefaultCameraView(camera, controls, modelSizeRef.current, true, view);
   };
 
   const deepClone = (obj) => {
@@ -194,11 +212,8 @@ export function useModelLoader({
 
     modelSizeRef.current = size;
 
-    const dist = Math.max(size.x, size.y, size.z) * 1.8;
-    camera.position.set(dist, dist * 0.5, 0);
-    controls.target.set(0, size.y / 2, 0);
-    controls.update();
-    controls.saveState();
+    const cameraTarget = floorName === "Lantai 1" ? addYouAreHereMarker() : null;
+    applyDefaultCameraView(camera, controls, size, true, cameraTarget);
 
     if (preserveCamera && savedCameraRef.current) {
       camera.position.copy(savedCameraRef.current.position);
@@ -231,8 +246,6 @@ export function useModelLoader({
       lastActiveFloorRef.current = null;
       animateTCIntro(lf);
     }
-
-    if (floorName === "Lantai 1") addYouAreHereMarker();
 
     setStatus("success");
   };
@@ -326,5 +339,5 @@ export function useModelLoader({
     }
   };
 
-  return { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom };
+  return { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, applyMarkerCameraView };
 }

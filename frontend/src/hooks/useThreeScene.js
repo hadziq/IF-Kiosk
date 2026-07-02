@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { C } from "../constants";
+import { applyDefaultCameraView } from "../cameraView";
 
 export function useThreeScene(mountRef) {
   const sceneRef = useRef({});
@@ -31,13 +32,13 @@ export function useThreeScene(mountRef) {
     scene.add(fillLight);
 
     const camera = new THREE.PerspectiveCamera(50, el.clientWidth / el.clientHeight, 0.01, 1000);
-    camera.position.set(0, 5, 10);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.minDistance = 1;
-    controls.maxDistance = 100;
+    controls.maxDistance = 200;
+    applyDefaultCameraView(camera, controls);
 
     let animId;
     const animate = () => {
@@ -47,18 +48,21 @@ export function useThreeScene(mountRef) {
     };
     animate();
 
-    const onResize = () => {
+    const resizeScene = () => {
       camera.aspect = el.clientWidth / el.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(el.clientWidth, el.clientHeight);
     };
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", resizeScene);
+    const resizeObserver = new ResizeObserver(resizeScene);
+    resizeObserver.observe(el);
 
     sceneRef.current = { scene, camera, renderer, controls };
 
     return () => {
       cancelAnimationFrame(animId);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", resizeScene);
+      resizeObserver.disconnect();
       renderer.dispose();
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
     };

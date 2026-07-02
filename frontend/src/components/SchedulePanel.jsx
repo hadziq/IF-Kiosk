@@ -58,6 +58,7 @@ const panelStyle = {
   width: "300px", minWidth: "300px",
   background: C.sidebar, borderLeft: `1px solid ${C.border}`,
   display: "flex", flexDirection: "column",
+  flexShrink: 0, height: "100%",
   overflowY: "auto", fontFamily: "'DM Mono', monospace",
 };
 

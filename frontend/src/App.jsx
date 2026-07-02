@@ -33,7 +33,7 @@ export default function App() {
     useAnimations(sceneRef);
 
   // ── Model loading ─────────────────────────────────────────────────
-  const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom } = useModelLoader({
+  const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, applyMarkerCameraView } = useModelLoader({
     sceneRef, floorAnimRef, isAnimatingRef,
     animateFloorIntro, animateTCIntro, lastActiveFloorRef, pendingRoomRef,
     setStatus, setModelInfo, setErrorMsg,
@@ -148,6 +148,12 @@ export default function App() {
 
   useEffect(() => { sendStateRef.current(); }, [view, activeFloor, modelInfo]);
 
+  useEffect(() => {
+    if (!phoneConnected || activeFloor !== "Lantai 1" || status !== "success") return;
+    const id = setTimeout(() => applyMarkerCameraView("connected"), 50);
+    return () => clearTimeout(id);
+  }, [phoneConnected, activeFloor, status]);
+
   // ── Room data fetch (single call: flags + occupants + schedules) ──
   const fetchRoomData = (room, showLoading) => {
     if (!room) { setRoomData(null); setSchedLoading(false); setSchedError(""); return; }
@@ -191,7 +197,7 @@ export default function App() {
       />
 
       {/* 3D viewport */}
-      <div style={{ flex: 1, position: "relative" }}>
+      <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "hidden" }}>
         <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
 
         {activeFloor && status === "success" && (
@@ -202,17 +208,17 @@ export default function App() {
 
         <QROverlay mobileUrl={mobileUrl} phoneConnected={phoneConnected} />
 
-        {view === "rooms" && activeFloor && activeFloor !== "Lantai 1" && status === "success" && (
+        {phoneConnected && view === "rooms" && activeFloor && activeFloor !== "Lantai 1" && status === "success" && (
           <div style={{
             position: "absolute", bottom: "20px", right: "20px",
             background: "rgba(8,9,15,0.9)", border: `1px solid ${C.green}`,
-            boxShadow: `0 0 12px rgba(0,230,118,0.3)`,
+            boxShadow: C.greenGlow,
             borderRadius: "8px", padding: "10px 16px",
             display: "flex", alignItems: "center", gap: "8px",
             backdropFilter: "blur(8px)",
             fontFamily: "'DM Mono', monospace",
           }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: C.green, boxShadow: `0 0 8px ${C.green}`, flexShrink: 0 }} />
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: C.green, boxShadow: C.greenGlow, flexShrink: 0 }} />
             <span style={{ fontSize: "12px", color: C.green, letterSpacing: "0.5px" }}>
               Anda berada di Lantai 1
             </span>
@@ -220,12 +226,16 @@ export default function App() {
         )}
       </div>
 
-      <SchedulePanel
-        roomName={activeRoom}
-        roomData={roomData}
-        loading={schedLoading}
-        error={schedError}
-      />
+      {phoneConnected && (
+        <div style={{ width: "300px", minWidth: "300px", height: "100%", flexShrink: 0 }}>
+          <SchedulePanel
+            roomName={activeRoom}
+            roomData={roomData}
+            loading={schedLoading}
+            error={schedError}
+          />
+        </div>
+      )}
     </div>
   );
 }

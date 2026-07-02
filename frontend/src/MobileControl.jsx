@@ -82,8 +82,8 @@ function CameraControls({ send }) {
         onPointerCancel={onPointerUp}
         style={{
           height: "180px",
-          background: "rgba(0,217,255,0.04)",
-          border: `1px solid rgba(0,217,255,0.15)`,
+          background: C.cyanDim,
+          border: `1px solid ${C.cyan}`,
           borderRadius: "10px",
           display: "flex",
           alignItems: "center",
@@ -93,7 +93,7 @@ function CameraControls({ send }) {
           cursor: "grab",
         }}
       >
-        <span style={{ color: "rgba(0,217,255,0.3)", fontSize: "11px", letterSpacing: "1.5px", pointerEvents: "none", textTransform: "uppercase" }}>
+        <span style={{ color: C.cyan, fontSize: "11px", letterSpacing: "1.5px", pointerEvents: "none", textTransform: "uppercase" }}>
           1 finger: rotate  ·  2 fingers: pan / pinch
         </span>
       </div>
@@ -282,7 +282,7 @@ export default function MobileControl() {
               borderRadius: "8px", padding: "11px 36px 11px 46px",
               color: C.text, fontSize: "13px", fontFamily: "'DM Mono', monospace",
               letterSpacing: "0.3px", outline: "none",
-              boxShadow: query ? `0 0 0 1px rgba(0,217,255,0.2)` : "none",
+              boxShadow: query ? C.cyanGlow : "none",
               transition: "border-color 0.15s, box-shadow 0.15s",
             }}
           />
@@ -374,7 +374,7 @@ export default function MobileControl() {
                     <>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         {item.class_code && (
-                          <span style={{ fontSize: "10px", color: C.cyan, background: "rgba(0,217,255,0.08)", border: "1px solid rgba(0,217,255,0.2)", borderRadius: "4px", padding: "1px 6px", letterSpacing: "0.5px" }}>
+                          <span style={{ fontSize: "10px", color: C.cyan, background: C.cyanDim, border: `1px solid ${C.cyan}`, borderRadius: "4px", padding: "1px 6px", letterSpacing: "0.5px" }}>
                             {item.class_code}
                           </span>
                         )}
