@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { C, displayName, DAYS } from "../constants";
 
 const JS_DAY_TO_ID = ["", ...DAYS, ""];
@@ -6,6 +6,16 @@ const trimSecs = (t) => t?.slice(0, 5) ?? t;
 
 function getTodayName() {
   return JS_DAY_TO_ID[new Date().getDay()] || null;
+}
+
+function getCurrentMinutes() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+function timeToMinutes(time) {
+  const [hours = 0, minutes = 0] = (trimSecs(time) || "00:00").split(":").map(Number);
+  return hours * 60 + minutes;
 }
 
 function getInitials(name = "") {
@@ -83,7 +93,15 @@ function ScheduleItems({ items, color, loading, error, today }) {
 
 export function SchedulePanel({ roomName, roomData, loading, error }) {
   const today = getTodayName();
-  const daySchedule = today && roomData?.schedules ? roomData.schedules.filter((s) => s.hari === today) : [];
+  const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
+  const daySchedule = today && roomData?.schedules
+    ? roomData.schedules.filter((s) => s.hari === today && timeToMinutes(s.jam_selesai) > currentMinutes)
+    : [];
+
+  useEffect(() => {
+    const id = setInterval(() => setCurrentMinutes(getCurrentMinutes()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   if (!roomName) return (
     <div style={{ ...panelStyle, alignItems: "center", justifyContent: "center" }}>
