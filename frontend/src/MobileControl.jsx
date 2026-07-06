@@ -202,11 +202,11 @@ export default function MobileControl() {
     letterSpacing: "0.5px",
     fontFamily: "'DM Mono', monospace",
     transition: "all 0.15s",
-    background: active ? (accent === "cyan" ? C.cyanDim : C.greenDim) : C.card,
-    border: `1px solid ${active ? (accent === "cyan" ? C.cyan : C.green) : C.border}`,
-    borderLeft: `4px solid ${active ? (accent === "cyan" ? C.cyan : C.green) : "transparent"}`,
-    color: active ? (accent === "cyan" ? C.cyan : C.green) : C.text,
-    boxShadow: active ? (accent === "cyan" ? C.cyanGlow : C.greenGlow) : "none",
+    background: active ? (accent === "cyan" ? C.cyanDim : C.blueDim) : C.card,
+    border: `1px solid ${active ? (accent === "cyan" ? C.cyan : C.blue) : C.border}`,
+    borderLeft: `4px solid ${active ? (accent === "cyan" ? C.cyan : C.blue) : "transparent"}`,
+    color: active ? (accent === "cyan" ? C.cyan : C.blue) : C.text,
+    boxShadow: active ? (accent === "cyan" ? C.cyanGlow : C.blueGlow) : "none",
   });
 
   if (!connected) return (
@@ -313,7 +313,7 @@ export default function MobileControl() {
               const isDosen = item.result_type === "dosen";
               const isRoom  = item.result_type === "room";
               const isReservasi = item.result_type === "reservasi";
-              const accentColor = isReservasi ? C.green : isDosen ? C.cyan : C.green;
+              const accentColor = isReservasi ? C.blue : isDosen ? C.cyan : C.blue;
               return (
                 <button
                   key={i}

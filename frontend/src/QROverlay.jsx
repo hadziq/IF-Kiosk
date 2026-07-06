@@ -42,7 +42,7 @@ export function QROverlay({ mobileUrl, phoneConnected }) {
           <p style={{ fontSize: "11px", color: C.green, letterSpacing: "1px", margin: 0 }}>
             Smartphone terhubung
           </p>
-          <p style={{ fontSize: "9px", color: C.sub, letterSpacing: "0.5px", margin: "4px 0 0" }}>
+          <p style={{ fontSize: "9px", color: "#ff4060", letterSpacing: "0.5px", margin: "4px 0 0" }}>
             Sesi terputus otomatis setelah 1 menit tidak aktif
           </p>
         </div>

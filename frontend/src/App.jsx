@@ -129,11 +129,12 @@ export default function App() {
   // ── WebSocket (sync state to phone on connect) ────────────────────
   const sendStateRef = useRef(null);
   const handleDisconnectRef = useRef(null);
-  handleDisconnectRef.current = () => {
+  const resetToDisconnectedView = () => {
     setActiveRoom(null);
     setActiveFloor("Lantai 1");
     loadFloorObjMtl("Lantai 1", true);
   };
+  handleDisconnectRef.current = resetToDisconnectedView;
 
   const { mobileUrl, phoneConnected, sendState } = useTVWebSocket({
     onCmd:             (action, payload) => handleCmdRef.current(action, payload),
@@ -173,8 +174,8 @@ export default function App() {
     return () => clearInterval(id);
   }, [activeRoom]);
 
-  // ── Load TC model on mount ────────────────────────────────────────
-  useEffect(() => { loadTC(false); }, []);
+  // ── Load the same kiosk view used after phone disconnect on mount ──
+  useEffect(() => { resetToDisconnectedView(); }, []);
 
   // ── Layout ────────────────────────────────────────────────────────
   return (

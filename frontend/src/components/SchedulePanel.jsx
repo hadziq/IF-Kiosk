@@ -124,8 +124,8 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
 
   if (is_ruangan && !is_lab && !is_kelas && !is_ruang_dosen) return (
     <div style={panelStyle}>
-      <div style={{ padding: "20px 16px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${C.schedGreen}`, background: `linear-gradient(90deg, ${C.schedGreen}0d 0%, transparent 100%)` }}>
-        <p style={{ fontSize: "12px", letterSpacing: "2px", color: C.schedGreen, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${C.schedGreen}` }}>
+      <div style={{ padding: "20px 16px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${C.blue}`, background: `linear-gradient(90deg, ${C.blue}0d 0%, transparent 100%)` }}>
+        <p style={{ fontSize: "12px", letterSpacing: "2px", color: C.blue, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${C.blue}` }}>
           Informasi Ruangan
         </p>
         <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 6px", letterSpacing: "1px" }}>{displayName(roomName)}</p>
@@ -172,8 +172,8 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
 
       {is_kelas && (
         <>
-          <div style={{ padding: "20px 16px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${C.schedGreen}`, background: `linear-gradient(90deg, ${C.schedGreen}0d 0%, transparent 100%)`, flexShrink: 0 }}>
-            <p style={{ fontSize: "12px", letterSpacing: "2px", color: C.schedGreen, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${C.schedGreen}` }}>
+          <div style={{ padding: "20px 16px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${C.blue}`, background: `linear-gradient(90deg, ${C.blue}0d 0%, transparent 100%)`, flexShrink: 0 }}>
+            <p style={{ fontSize: "12px", letterSpacing: "2px", color: C.blue, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${C.blue}` }}>
               Jadwal Kelas
             </p>
             {!topLabel && (
@@ -182,7 +182,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
             <p style={{ fontSize: "13px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{today ?? "Akhir Pekan"}</p>
           </div>
           <div style={{ flex: 1, padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            <ScheduleItems items={daySchedule} color={C.schedGreen} loading={false} error={error} today={today} />
+            <ScheduleItems items={daySchedule} color={C.blue} loading={false} error={error} today={today} />
           </div>
         </>
       )}

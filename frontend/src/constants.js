@@ -6,26 +6,25 @@ export const FLOORS = ["Lantai 1", "Lantai 2", "Lantai 3", "Lantai 4"];
 
 export function getExt(name) { return name.split(".").pop().toLowerCase(); }
 
-const ACCENT = "#26328f";
-const ACCENT_RGB = "38,50,143";
+const BLUE = "#26328f";
+const BLUE_RGB = "38,50,143";
+const BLUE_GLOW_RGB = "95,155,255";
+const GREEN = "#22c55e";
+const GREEN_RGB = "34,197,94";
 
 export const C = {
   bg:        "#060d0f",
   sidebar:   "#080f12",
   card:      "#0b1316",
   border:    "#142025",
-  cyan:      ACCENT,
-  cyanDim:   `rgba(${ACCENT_RGB},0.16)`,
-  cyanGlow:  `0 0 12px rgba(${ACCENT_RGB},0.5)`,
-  green:     ACCENT,
-  greenDim:  `rgba(${ACCENT_RGB},0.16)`,
-  greenGlow: `0 0 12px rgba(${ACCENT_RGB},0.5)`,
-  schedGreen:     ACCENT,
-  schedGreenDim:  `rgba(${ACCENT_RGB},0.16)`,
-  schedGreenGlow: `0 0 12px rgba(${ACCENT_RGB},0.5)`,
-  blue:      ACCENT,
-  blueDim:   `rgba(${ACCENT_RGB},0.16)`,
-  blueGlow:  `0 0 12px rgba(${ACCENT_RGB},0.5)`,
+  cyan:      BLUE,
+  cyanDim:   `rgba(${BLUE_RGB},0.16)`,
+  cyanGlow:  `0 0 12px rgba(${BLUE_GLOW_RGB},0.55)`,
+  green:     GREEN,
+  greenGlow: `0 0 12px rgba(${GREEN_RGB},0.55)`,
+  blue:      BLUE,
+  blueDim:   `rgba(${BLUE_RGB},0.16)`,
+  blueGlow:  `0 0 12px rgba(${BLUE_GLOW_RGB},0.55)`,
   text:      "#c8d8f0",
   muted:     "#3a4460",
   sub:       "#6a7890",
