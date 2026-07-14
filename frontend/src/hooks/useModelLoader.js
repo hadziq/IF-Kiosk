@@ -11,6 +11,8 @@ export function useModelLoader({
   isAnimatingRef,
   animateFloorIntro,
   animateTCIntro,
+  cancelRotationAnimation,
+  setModelRotationBase,
   lastActiveFloorRef,
   pendingRoomRef,
   setStatus,
@@ -102,11 +104,13 @@ export function useModelLoader({
 
     group.position.copy(tvCenter);
     group.position.y = tvBox.max.y;
-    scene.add(group);
+    model.updateMatrixWorld(true);
+    model.add(group);
+    model.worldToLocal(group.position);
     markerRef.current = group;
     markerSizeRef.current = s;
 
-    return getMarkerDefaultCameraView(group.position, s, modelSizeRef.current);
+    return getMarkerDefaultCameraView(group.getWorldPosition(new THREE.Vector3()), s, modelSizeRef.current);
   };
 
   const applyMarkerCameraView = (mode = "disconnected") => {
@@ -114,7 +118,7 @@ export function useModelLoader({
     if (!camera || !controls || !markerRef.current || !markerSizeRef.current) return;
 
     const view = getMarkerDefaultCameraView(
-      markerRef.current.position,
+      markerRef.current.getWorldPosition(new THREE.Vector3()),
       markerSizeRef.current,
       modelSizeRef.current,
       mode,
@@ -184,8 +188,11 @@ export function useModelLoader({
       floorAnimRef.current  = null;
       isAnimatingRef.current = false;
     }
+    cancelRotationAnimation?.();
 
     const { scene, camera, controls } = sceneRef.current;
+    const pivot = scene.getObjectByName("__idle_rotation_pivot__");
+    if (pivot) scene.remove(pivot);
     removeMarker();
     const prev = scene.getObjectByName("__loaded_model__");
     if (prev) scene.remove(prev);
@@ -211,6 +218,7 @@ export function useModelLoader({
     scene.add(model);
 
     modelSizeRef.current = size;
+    setModelRotationBase?.(model.rotation.y);
 
     const cameraTarget = floorName === "Lantai 1" ? addYouAreHereMarker() : null;
     applyDefaultCameraView(camera, controls, size, true, cameraTarget);
@@ -252,6 +260,7 @@ export function useModelLoader({
 
   const loadTC = (preserveCamera = true) => {
     const { camera, controls } = sceneRef.current;
+    cancelRotationAnimation?.();
     if (preserveCamera && camera && controls) {
       savedCameraRef.current = { position: camera.position.clone(), target: controls.target.clone() };
     }
@@ -273,6 +282,7 @@ export function useModelLoader({
 
   const loadFloorObjMtl = (floorName, resetCamera = false) => {
     const { camera, controls, scene } = sceneRef.current;
+    cancelRotationAnimation?.();
     if (!resetCamera && camera && controls) {
       savedCameraRef.current = { position: camera.position.clone(), target: controls.target.clone() };
     } else {
@@ -307,11 +317,13 @@ export function useModelLoader({
   };
 
   const loadByUrl = (url) => {
+    cancelRotationAnimation?.();
     setStatus("loading"); setModelInfo(null); setErrorMsg(""); setView("floors");
     new OBJLoader().load(url, finalizeModel, undefined, onErr);
   };
 
   const loadByFiles = (files) => {
+    cancelRotationAnimation?.();
     const fm = {};
     Array.from(files).forEach((f) => { fm[getExt(f.name)] = f; });
     setStatus("loading"); setModelInfo(null); setErrorMsg(""); setView("floors");

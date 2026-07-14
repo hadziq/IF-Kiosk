@@ -1,10 +1,144 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import * as THREE from "three";
 import { FLOORS, tcFloorByName } from "../constants";
 
 export function useAnimations(sceneRef) {
   const floorAnimRef    = useRef(null);
   const isAnimatingRef  = useRef(false);
+  const rotationAnimRef = useRef(null);
+  const rotationPivotRef = useRef(null);
+  const defaultRotationYRef = useRef(0);
+
+  const getLoadedModel = useCallback(() => sceneRef.current.scene?.getObjectByName("__loaded_model__"), [sceneRef]);
+
+  const cancelRotationAnimation = useCallback(() => {
+    if (rotationAnimRef.current) cancelAnimationFrame(rotationAnimRef.current);
+    rotationAnimRef.current = null;
+  }, []);
+
+  const getIdlePivotPoint = useCallback(() => {
+    const model = getLoadedModel();
+    if (!model) return null;
+
+    model.updateMatrixWorld(true);
+    let plazaMesh = null;
+    model.traverse((child) => {
+      if (plazaMesh || !child.isMesh || !child.name) return;
+      if (/^plaza(_|\b)/i.test(child.name) || /plaza_supeno/i.test(child.name)) {
+        plazaMesh = child;
+      }
+    });
+
+    const box = plazaMesh
+      ? new THREE.Box3().setFromObject(plazaMesh)
+      : new THREE.Box3().setFromObject(model);
+    return box.getCenter(new THREE.Vector3());
+  }, [getLoadedModel]);
+
+  const wrapModelInRotationPivot = useCallback(() => {
+    if (rotationPivotRef.current) return rotationPivotRef.current;
+
+    const model = getLoadedModel();
+    const { scene } = sceneRef.current;
+    if (!model || !scene) return null;
+
+    const pivotPoint = getIdlePivotPoint();
+    if (!pivotPoint) return null;
+
+    const pivot = new THREE.Group();
+    pivot.name = "__idle_rotation_pivot__";
+    pivot.position.copy(pivotPoint);
+    scene.add(pivot);
+    pivot.attach(model);
+
+    rotationPivotRef.current = pivot;
+    return pivot;
+  }, [getIdlePivotPoint, getLoadedModel, sceneRef]);
+
+  const unwrapModelFromRotationPivot = useCallback(() => {
+    const pivot = rotationPivotRef.current;
+    const model = getLoadedModel();
+    const { scene } = sceneRef.current;
+    if (!pivot || !model || !scene) {
+      rotationPivotRef.current = null;
+      return;
+    }
+
+    scene.attach(model);
+    scene.remove(pivot);
+    rotationPivotRef.current = null;
+  }, [getLoadedModel, sceneRef]);
+
+  const setModelRotationBase = useCallback((rotationY = 0) => {
+    defaultRotationYRef.current = rotationY;
+  }, []);
+
+  const startIdleRotation = useCallback(() => {
+    const pivot = wrapModelInRotationPivot();
+    if (!pivot) return;
+
+    cancelRotationAnimation();
+
+    const baseRotationY = rotationPivotRef.current?.rotation.y ?? defaultRotationYRef.current;
+    const speed = 0.00035;
+    const startTime = performance.now();
+
+    const tick = (now) => {
+      pivot.rotation.y = baseRotationY + (now - startTime) * speed;
+      rotationAnimRef.current = requestAnimationFrame(tick);
+    };
+
+    rotationAnimRef.current = requestAnimationFrame(tick);
+  }, [cancelRotationAnimation, getLoadedModel]);
+
+  const restoreModelRotation = useCallback((duration = 1800) => {
+    const pivot = rotationPivotRef.current;
+    const model = getLoadedModel();
+    if (!pivot || !model) {
+      unwrapModelFromRotationPivot();
+      return;
+    }
+
+    const startRotationY = pivot.rotation.y;
+    const baseRotationY = defaultRotationYRef.current;
+    const TAU = Math.PI * 2;
+    let targetRotationY = baseRotationY;
+    while (targetRotationY < startRotationY) targetRotationY += TAU;
+    cancelRotationAnimation();
+
+    if (Math.abs(startRotationY - targetRotationY) < 0.0001) {
+      model.rotation.y = baseRotationY;
+      unwrapModelFromRotationPivot();
+      return;
+    }
+
+    const startTime = performance.now();
+
+    const tick = (now) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - (1 - t) * (1 - t);
+      pivot.rotation.y = startRotationY + (targetRotationY - startRotationY) * eased;
+
+      if (t < 1) {
+        rotationAnimRef.current = requestAnimationFrame(tick);
+      } else {
+        rotationAnimRef.current = null;
+        pivot.rotation.y = targetRotationY;
+        unwrapModelFromRotationPivot();
+        model.rotation.y = baseRotationY;
+      }
+    };
+
+    rotationAnimRef.current = requestAnimationFrame(tick);
+  }, [cancelRotationAnimation, getLoadedModel, unwrapModelFromRotationPivot]);
+
+  const snapModelRotation = useCallback(() => {
+    const pivot = rotationPivotRef.current;
+    if (!pivot) return;
+    cancelRotationAnimation();
+    pivot.rotation.y = defaultRotationYRef.current;
+    unwrapModelFromRotationPivot();
+  }, [cancelRotationAnimation, unwrapModelFromRotationPivot]);
 
   const animateFloorTransition = (selectedFloor, callback) => {
     const { scene } = sceneRef.current;
@@ -215,5 +349,16 @@ export function useAnimations(sceneRef) {
     floorAnimRef.current = requestAnimationFrame(tick);
   };
 
-  return { floorAnimRef, isAnimatingRef, animateFloorTransition, animateTCIntro, animateFloorIntro };
+  return {
+    floorAnimRef,
+    isAnimatingRef,
+    animateFloorTransition,
+    animateTCIntro,
+    animateFloorIntro,
+    startIdleRotation,
+    restoreModelRotation,
+    snapModelRotation,
+    cancelRotationAnimation,
+    setModelRotationBase,
+  };
 }

@@ -14,6 +14,7 @@ export default function App() {
   const mountRef           = useRef(null);
   const lastActiveFloorRef = useRef(null);
   const pendingRoomRef     = useRef(null);
+  const idleRotationTimerRef = useRef(null);
 
   const [status,       setStatus]       = useState("idle");
   const [modelInfo,    setModelInfo]    = useState(null);
@@ -29,13 +30,24 @@ export default function App() {
   const sceneRef = useThreeScene(mountRef);
 
   // ── Floor/room animations ─────────────────────────────────────────
-  const { floorAnimRef, isAnimatingRef, animateFloorTransition, animateTCIntro, animateFloorIntro } =
+  const {
+    floorAnimRef,
+    isAnimatingRef,
+    animateFloorTransition,
+    animateTCIntro,
+    animateFloorIntro,
+    startIdleRotation,
+    restoreModelRotation,
+    cancelRotationAnimation,
+    setModelRotationBase,
+  } =
     useAnimations(sceneRef);
 
   // ── Model loading ─────────────────────────────────────────────────
   const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, applyMarkerCameraView } = useModelLoader({
     sceneRef, floorAnimRef, isAnimatingRef,
-    animateFloorIntro, animateTCIntro, lastActiveFloorRef, pendingRoomRef,
+    animateFloorIntro, animateTCIntro, cancelRotationAnimation, setModelRotationBase,
+    lastActiveFloorRef, pendingRoomRef,
     setStatus, setModelInfo, setErrorMsg,
     setActiveFloor, setActiveRoom, setRoomData, setView,
   });
@@ -141,6 +153,48 @@ export default function App() {
     onPhoneConnect:    () => sendStateRef.current(),
     onPhoneDisconnect: () => handleDisconnectRef.current(),
   });
+
+  useEffect(() => {
+    if (!phoneConnected) return;
+    restoreModelRotation();
+  }, [phoneConnected, restoreModelRotation]);
+
+  useEffect(() => {
+    const clearIdleTimer = () => {
+      if (idleRotationTimerRef.current) {
+        clearTimeout(idleRotationTimerRef.current);
+        idleRotationTimerRef.current = null;
+      }
+    };
+
+    const armIdleRotation = () => {
+      clearIdleTimer();
+      if (phoneConnected) return;
+      idleRotationTimerRef.current = setTimeout(() => {
+        startIdleRotation();
+      }, 10000);
+    };
+
+    const handleActivity = () => {
+      if (phoneConnected) return;
+      restoreModelRotation();
+      armIdleRotation();
+    };
+
+    armIdleRotation();
+    window.addEventListener("pointerdown", handleActivity);
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("mousemove", handleActivity);
+    window.addEventListener("touchstart", handleActivity, { passive: true });
+
+    return () => {
+      clearIdleTimer();
+      window.removeEventListener("pointerdown", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+    };
+  }, [phoneConnected, startIdleRotation, restoreModelRotation]);
 
   sendStateRef.current = () => {
     const rooms = groupMeshNames(modelInfo?.meshNames?.filter(n => !EXCLUDE.test(n)).sort(getRoomSort(activeFloor)) || []);
