@@ -67,7 +67,7 @@ export function QROverlay({ mobileUrl, phoneConnected }) {
         level="M"
       />
       <p style={{
-        fontSize: "14px", color: C.cyan, letterSpacing: "1.5px",
+        fontSize: "14px", color: "#ffffff", letterSpacing: "1.5px",
         textTransform: "uppercase", margin: 0,
         textShadow: `0 0 8px ${C.cyan}`,
       }}>

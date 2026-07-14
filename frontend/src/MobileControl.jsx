@@ -93,7 +93,7 @@ function CameraControls({ send }) {
           cursor: "grab",
         }}
       >
-        <span style={{ color: C.cyan, fontSize: "11px", letterSpacing: "1.5px", pointerEvents: "none", textTransform: "uppercase" }}>
+        <span style={{ color: "#ffffff", fontSize: "11px", letterSpacing: "1.5px", pointerEvents: "none", textTransform: "uppercase" }}>
           1 finger: rotate  ·  2 fingers: pan / pinch
         </span>
       </div>

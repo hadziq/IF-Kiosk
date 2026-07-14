@@ -6,9 +6,9 @@ export const FLOORS = ["Lantai 1", "Lantai 2", "Lantai 3", "Lantai 4"];
 
 export function getExt(name) { return name.split(".").pop().toLowerCase(); }
 
-const BLUE = "#26328f";
-const BLUE_RGB = "38,50,143";
-const BLUE_GLOW_RGB = "95,155,255";
+const BLUE = "#5b7fff";
+const BLUE_RGB = "91,127,255";
+const BLUE_GLOW_RGB = "91,127,255";
 const GREEN = "#22c55e";
 const GREEN_RGB = "34,197,94";
 

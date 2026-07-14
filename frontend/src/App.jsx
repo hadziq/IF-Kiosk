@@ -203,11 +203,12 @@ export default function App() {
 
   useEffect(() => { sendStateRef.current(); }, [view, activeFloor, modelInfo]);
 
-  useEffect(() => {
-    if (!phoneConnected || activeFloor !== "Lantai 1" || status !== "success") return;
-    const id = setTimeout(() => applyMarkerCameraView("connected"), 50);
-    return () => clearTimeout(id);
-  }, [phoneConnected, activeFloor, status]);
+  // Removed: Camera zoom effect when connected - keep same view as disconnected
+  // useEffect(() => {
+  //   if (!phoneConnected || activeFloor !== "Lantai 1" || status !== "success") return;
+  //   const id = setTimeout(() => applyMarkerCameraView("connected"), 50);
+  //   return () => clearTimeout(id);
+  // }, [phoneConnected, activeFloor, status]);
 
   // ── Room data fetch (single call: flags + occupants + schedules) ──
   const fetchRoomData = (room, showLoading) => {
@@ -256,7 +257,7 @@ export default function App() {
         <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
 
         {activeFloor && status === "success" && (
-          <div style={{ position: "absolute", top: "16px", left: "16px", background: "rgba(8,9,15,0.85)", border: `1px solid ${C.cyan}`, boxShadow: C.cyanGlow, borderRadius: "6px", padding: "8px 16px", fontSize: "14px", color: C.cyan, letterSpacing: "1px", backdropFilter: "blur(6px)" }}>
+          <div style={{ position: "absolute", top: "16px", left: "16px", background: "rgba(8,9,15,0.85)", border: `1px solid ${C.cyan}`, boxShadow: C.cyanGlow, borderRadius: "6px", padding: "8px 16px", fontSize: "18px", color: C.cyan, letterSpacing: "1px", backdropFilter: "blur(6px)" }}>
             {activeFloor}{activeRoom && <span style={{ color: C.sub }}> / {activeRoom.replace(/_/g, " ")}</span>}
           </div>
         )}

@@ -129,7 +129,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
           Informasi Ruangan
         </p>
         <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 6px", letterSpacing: "1px" }}>{displayName(roomName)}</p>
-        <p style={{ fontSize: "13px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{lantai ?? "-"}</p>
+        <p style={{ fontSize: "16px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{lantai ?? "-"}</p>
       </div>
       <div style={{ flex: 1, padding: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <p style={{ fontSize: "14px", color: C.sub, letterSpacing: "1px" }}>{keterangan ?? displayName(roomName)}</p>
@@ -149,7 +149,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
           </p>
           {keterangan && <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 4px", letterSpacing: "1px" }}>{keterangan}</p>}
           {!keterangan && <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 4px", letterSpacing: "1px" }}>{displayName(roomName)}</p>}
-          <p style={{ fontSize: "13px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{lantai ?? "-"}</p>
+          <p style={{ fontSize: "16px", color: C.sub, margin: 0, letterSpacing: "0.5px" }}>{lantai ?? "-"}</p>
         </div>
       )}
 
