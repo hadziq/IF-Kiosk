@@ -20,7 +20,7 @@ export function applyDefaultCameraView(camera, controls, size = DEFAULT_CAMERA_S
 
 export function getMarkerDefaultCameraView(markerPosition, markerSize, modelSize = DEFAULT_CAMERA_SIZE, mode = "disconnected") {
   const span = Math.max(modelSize.x, modelSize.z, 1);
-  const screenLeftOffset = span * (mode === "connected" ? 0.18 : 0.38);
+  const screenLeftOffset = span * (mode === "connected" ? 0.35 : 0.38);
 
   return {
     target: new THREE.Vector3(

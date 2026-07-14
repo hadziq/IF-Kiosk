@@ -203,12 +203,11 @@ export default function App() {
 
   useEffect(() => { sendStateRef.current(); }, [view, activeFloor, modelInfo]);
 
-  // Removed: Camera zoom effect when connected - keep same view as disconnected
-  // useEffect(() => {
-  //   if (!phoneConnected || activeFloor !== "Lantai 1" || status !== "success") return;
-  //   const id = setTimeout(() => applyMarkerCameraView("connected"), 50);
-  //   return () => clearTimeout(id);
-  // }, [phoneConnected, activeFloor, status]);
+  useEffect(() => {
+    if (!phoneConnected || activeFloor !== "Lantai 1" || status !== "success") return;
+    const id = setTimeout(() => applyMarkerCameraView("connected"), 50);
+    return () => clearTimeout(id);
+  }, [phoneConnected, activeFloor, status]);
 
   // ── Room data fetch (single call: flags + occupants + schedules) ──
   const fetchRoomData = (room, showLoading) => {
