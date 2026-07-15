@@ -94,16 +94,35 @@ export function useAnimations(sceneRef) {
   const restoreModelRotation = useCallback((duration = 1800) => {
     const pivot = rotationPivotRef.current;
     const model = getLoadedModel();
-    if (!pivot || !model) {
+    const baseRotationY = defaultRotationYRef.current;
+
+    if (!model) {
+      unwrapModelFromRotationPivot();
+      return;
+    }
+
+    // No idle pivot means there is no active orbit to interpolate from.
+    // Snap directly to the known base orientation so reconnect is deterministic.
+    if (!pivot) {
+      model.rotation.y = baseRotationY;
       unwrapModelFromRotationPivot();
       return;
     }
 
     const startRotationY = pivot.rotation.y;
-    const baseRotationY = defaultRotationYRef.current;
     const TAU = Math.PI * 2;
-    let targetRotationY = baseRotationY;
-    while (targetRotationY < startRotationY) targetRotationY += TAU;
+
+    const normalizeAngle = (angle) => {
+      const wrapped = angle % TAU;
+      return wrapped < 0 ? wrapped + TAU : wrapped;
+    };
+
+    // Continue in the same anti-clockwise direction as idle rotation.
+    const startWrapped = normalizeAngle(startRotationY);
+    const baseWrapped = normalizeAngle(baseRotationY);
+    const delta = (baseWrapped - startWrapped + TAU) % TAU;
+    const targetRotationY = startRotationY + delta;
+
     cancelRotationAnimation();
 
     if (Math.abs(startRotationY - targetRotationY) < 0.0001) {

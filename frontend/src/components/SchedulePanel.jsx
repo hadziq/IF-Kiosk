@@ -73,8 +73,8 @@ function ScheduleItems({ items, color, loading, error, today }) {
       ! {error}
     </div>
   );
-  if (!today) return <p style={{ fontSize: "11px", color: C.muted, letterSpacing: "1px", textAlign: "center", padding: "20px 0" }}>- AKHIR PEKAN -</p>;
-  if (items.length === 0) return <p style={{ fontSize: "11px", color: C.muted, letterSpacing: "1px", textAlign: "center", padding: "20px 0" }}>- TIDAK ADA KELAS -</p>;
+  if (!today) return <p style={{ fontSize: "15px", color: C.muted, letterSpacing: "1px", textAlign: "center", padding: "20px 0" }}>- AKHIR PEKAN -</p>;
+  if (items.length === 0) return <p style={{ fontSize: "15px", color: C.muted, letterSpacing: "1px", textAlign: "center", padding: "20px 0" }}>- TIDAK ADA KELAS -</p>;
 
   return items.map((item) => (
     <div key={item.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -106,7 +106,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
 
   if (!roomName) return (
     <div style={{ ...panelStyle, alignItems: "center", justifyContent: "center" }}>
-      <p style={{ fontSize: "12px", color: C.muted, textAlign: "center", padding: "20px", letterSpacing: "0.5px" }}>
+      <p style={{ fontSize: "18px", color: "#ffffff", textAlign: "center", padding: "20px", letterSpacing: "0.5px" }}>
         Pilih ruangan untuk melihat jadwal
       </p>
     </div>
@@ -156,7 +156,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
       {is_ruang_dosen && (
         <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", borderBottom: `1px solid ${C.border}` }}>
           {occupants.length === 0
-            ? <p style={{ fontSize: "11px", color: C.muted, letterSpacing: "1px", margin: 0 }}>-</p>
+            ? <p style={{ fontSize: "13px", color: C.muted, letterSpacing: "1px", margin: 0 }}>-</p>
             : occupants.map((occupant, i) => {
                 const name = typeof occupant === "string" ? occupant : occupant.nama;
                 return (

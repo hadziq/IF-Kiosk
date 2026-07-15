@@ -24,7 +24,7 @@ const S = {
     border: `1px solid ${C.border}`,
     borderRadius: "6px",
     color: C.text,
-    fontSize: "13px",
+    fontSize: "14px",
     fontFamily: "'DM Mono', monospace",
     outline: "none",
   },
@@ -35,7 +35,7 @@ const S = {
     border: `1px solid ${C.border}`,
     borderRadius: "6px",
     color: C.text,
-    fontSize: "13px",
+    fontSize: "14px",
     fontFamily: "'DM Mono', monospace",
     outline: "none",
   },
@@ -45,7 +45,7 @@ const S = {
     border: `1px solid ${color}`,
     borderRadius: "6px",
     color,
-    fontSize: "12px",
+    fontSize: "14px",
     cursor: "pointer",
     fontFamily: "'DM Mono', monospace",
     letterSpacing: "0.5px",
@@ -56,14 +56,14 @@ const S = {
     border: "none",
     borderRadius: "6px",
     color: "#000",
-    fontSize: "12px",
+    fontSize: "14px",
     fontWeight: "700",
     cursor: "pointer",
     fontFamily: "'DM Mono', monospace",
     letterSpacing: "0.5px",
   }),
   label: {
-    fontSize: "10px",
+    fontSize: "12px",
     color: C.sub,
     letterSpacing: "1px",
     textTransform: "uppercase",
@@ -82,7 +82,7 @@ function Field({ label, children }) {
 
 function Checkbox({ label, checked, onChange }) {
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: C.text, cursor: "pointer" }}>
+    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", color: C.text, cursor: "pointer" }}>
       <input type="checkbox" checked={checked} onChange={onChange} />
       {label}
     </label>
@@ -126,7 +126,7 @@ function SearchableSelect({ value, onChange, options, placeholder = "Pilih...", 
       {open && (
         <div style={{ position: "absolute", zIndex: 1200, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: "180px", overflowY: "auto", background: C.card, border: `1px solid ${C.border}`, borderRadius: "6px", boxShadow: "0 12px 24px rgba(0,0,0,0.35)" }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: "9px 10px", color: C.muted, fontSize: "12px" }}>Tidak ada pilihan</div>
+            <div style={{ padding: "9px 10px", color: C.muted, fontSize: "14px" }}>Tidak ada pilihan</div>
           ) : filtered.map((opt) => (
             <button
               key={String(opt.value)}
@@ -137,7 +137,7 @@ function SearchableSelect({ value, onChange, options, placeholder = "Pilih...", 
                 setQuery(opt.label);
                 setOpen(false);
               }}
-              style={{ width: "100%", padding: "9px 10px", background: String(opt.value) === String(value) ? C.cyanDim : "transparent", border: "none", borderBottom: `1px solid ${C.border}`, color: C.text, cursor: "pointer", textAlign: "left", fontSize: "12px", fontFamily: "'DM Mono', monospace" }}
+              style={{ width: "100%", padding: "9px 10px", background: String(opt.value) === String(value) ? C.cyanDim : "transparent", border: "none", borderBottom: `1px solid ${C.border}`, color: C.text, cursor: "pointer", textAlign: "left", fontSize: "14px", fontFamily: "'DM Mono', monospace" }}
             >
               {opt.label}
             </button>
@@ -180,8 +180,8 @@ function Modal({ title, onClose, children }) {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ fontSize: "16px", color: C.cyan, letterSpacing: "1px", margin: 0 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: "18px", cursor: "pointer" }}>
+          <h3 style={{ fontSize: "18px", color: C.cyan, letterSpacing: "1px", margin: 0 }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: "22px", cursor: "pointer" }}>
             ✕
           </button>
         </div>
@@ -194,7 +194,7 @@ function Modal({ title, onClose, children }) {
 function ConfirmDialog({ message, onConfirm, onCancel }) {
   return (
     <Modal title="Konfirmasi" onClose={onCancel}>
-      <p style={{ color: C.text, fontSize: "13px" }}>{message}</p>
+      <p style={{ color: C.text, fontSize: "14px" }}>{message}</p>
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
         <button onClick={onCancel} style={S.btn(C.sub)}>Batal</button>
         <button onClick={onConfirm} style={S.btnFill("#ff4060")}>Hapus</button>
@@ -249,11 +249,11 @@ function RuanganTab() {
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["ID", "Nama Ruang", "Lantai", "Kelas", "Lab", "R. Dosen", "Ruangan", "Reservable", "Keterangan", ""].map((h) => (
-                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "10px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
+                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -361,11 +361,11 @@ function DosenTab() {
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["ID", "Nama", ""].map((h) => (
-                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "10px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
+                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -459,11 +459,11 @@ function JadwalTab() {
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["ID", "Ruangan", "Hari", "Mulai", "Selesai", "Mata Kuliah", "Dosen", ""].map((h) => (
-                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "10px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
+                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -476,7 +476,7 @@ function JadwalTab() {
                 <td style={{ padding: "8px 10px", color: C.text }}>{j.jam_mulai?.slice(0, 5)}</td>
                 <td style={{ padding: "8px 10px", color: C.text }}>{j.jam_selesai?.slice(0, 5)}</td>
                 <td style={{ padding: "8px 10px", color: C.text }}>{j.mata_kuliah}</td>
-                <td style={{ padding: "8px 10px", color: C.sub, fontSize: "11px" }}>
+                <td style={{ padding: "8px 10px", color: C.sub, fontSize: "13px" }}>
                   {j.nama_dosen}
                   {j.nama_dosen_2 && <>, {j.nama_dosen_2}</>}
                   {j.nama_dosen_3 && <>, {j.nama_dosen_3}</>}
@@ -631,11 +631,11 @@ function PenghuniTab() {
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["ID", "Ruangan", "Dosen", "Urutan", ""].map((h) => (
-                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "10px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
+                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -764,17 +764,17 @@ function ReservasiTab() {
       </div>
 
       {reservableRooms.length === 0 && (
-        <p style={{ fontSize: "12px", color: C.muted, letterSpacing: "0.5px" }}>
+        <p style={{ fontSize: "14px", color: C.muted, letterSpacing: "0.5px" }}>
           Belum ada ruangan yang ditandai sebagai "Reservable". Tandai ruangan di tab Ruangan terlebih dahulu.
         </p>
       )}
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["ID", "Ruangan", "Tanggal", "Mulai", "Selesai", "Dosen", "Keterangan", ""].map((h) => (
-                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "10px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
+                <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: C.sub, fontSize: "12px", letterSpacing: "1px", textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -804,7 +804,7 @@ function ReservasiTab() {
       {editing && (
         <Modal title={editing.id ? "Edit Reservasi" : "Tambah Reservasi"} onClose={() => setEditing(null)}>
           {error && (
-            <div style={{ background: "#200a10", border: "1px solid #5a1020", borderRadius: "6px", padding: "10px", fontSize: "12px", color: "#ff4060" }}>
+            <div style={{ background: "#200a10", border: "1px solid #5a1020", borderRadius: "6px", padding: "10px", fontSize: "14px", color: "#ff4060" }}>
               {error}
             </div>
           )}
@@ -890,10 +890,10 @@ export default function Admin() {
         flexShrink: 0,
       }}>
         <div>
-          <p style={{ fontSize: "8px", letterSpacing: "3px", color: "#ffffff", textTransform: "uppercase", margin: "0 0 2px" }}>Teknik Informatika</p>
-          <p style={{ fontSize: "20px", fontWeight: "700", margin: 0, letterSpacing: "2px" }}>
+          <p style={{ fontSize: "11px", letterSpacing: "3px", color: "#ffffff", textTransform: "uppercase", margin: "0 0 2px" }}>Teknik Informatika</p>
+          <p style={{ fontSize: "24px", fontWeight: "700", margin: 0, letterSpacing: "2px" }}>
             <span style={{ color: C.cyan }}>IF Kiosk</span>
-            <span style={{ color: C.sub, fontSize: "14px", marginLeft: "10px" }}>Admin</span>
+            <span style={{ color: C.sub, fontSize: "16px", marginLeft: "10px" }}>Admin</span>
           </p>
         </div>
       </div>
@@ -916,7 +916,7 @@ export default function Admin() {
               border: "none",
               borderBottom: tab === t.key ? `2px solid ${C.cyan}` : "2px solid transparent",
               color: tab === t.key ? C.cyan : C.sub,
-              fontSize: "12px",
+              fontSize: "14px",
               letterSpacing: "0.5px",
               cursor: "pointer",
               fontFamily: "'DM Mono', monospace",

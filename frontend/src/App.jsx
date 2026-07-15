@@ -44,7 +44,7 @@ export default function App() {
     useAnimations(sceneRef);
 
   // ── Model loading ─────────────────────────────────────────────────
-  const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, applyMarkerCameraView } = useModelLoader({
+  const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom } = useModelLoader({
     sceneRef, floorAnimRef, isAnimatingRef,
     animateFloorIntro, animateTCIntro, cancelRotationAnimation, setModelRotationBase,
     lastActiveFloorRef, pendingRoomRef,
@@ -202,12 +202,6 @@ export default function App() {
   };
 
   useEffect(() => { sendStateRef.current(); }, [view, activeFloor, modelInfo]);
-
-  useEffect(() => {
-    if (!phoneConnected || activeFloor !== "Lantai 1" || status !== "success") return;
-    const id = setTimeout(() => applyMarkerCameraView("connected"), 50);
-    return () => clearTimeout(id);
-  }, [phoneConnected, activeFloor, status]);
 
   // ── Room data fetch (single call: flags + occupants + schedules) ──
   const fetchRoomData = (room, showLoading) => {
