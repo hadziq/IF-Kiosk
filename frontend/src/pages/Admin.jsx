@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { API_URL, C, FLOORS, DAYS } from "./constants";
+import { API_URL, C, FLOORS, DAYS } from "../lib/constants";
 
 const api = (path, opts) =>
   fetch(`${API_URL}${path}`, {

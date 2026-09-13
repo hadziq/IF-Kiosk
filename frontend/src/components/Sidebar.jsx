@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { C, FLOORS, EXCLUDE, getRoomSort, displayName, groupMeshNames } from "../constants";
+import { C, FLOORS, EXCLUDE, getRoomSort, displayName, groupMeshNames } from "../lib/constants";
 
 function sidebarLabel(text) {
   return (

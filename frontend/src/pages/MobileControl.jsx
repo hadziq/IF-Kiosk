@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Search, X, LoaderCircle, CheckCircle, ChevronRight } from "lucide-react";
-import { C, DAYS, FLOORS, EXCLUDE, displayName } from "./constants";
+import { C, DAYS, FLOORS, EXCLUDE, displayName } from "../lib/constants";
 
 const JS_DAY_TO_ID = ["", ...DAYS, ""];
 const TODAY = JS_DAY_TO_ID[new Date().getDay()] || null;

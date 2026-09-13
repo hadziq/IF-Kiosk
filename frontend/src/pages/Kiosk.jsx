@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-import { API_URL, C, EXCLUDE, getRoomSort, groupMeshNames } from "./constants";
-import { useThreeScene }  from "./hooks/useThreeScene";
-import { useAnimations }  from "./hooks/useAnimations";
-import { useModelLoader } from "./hooks/useModelLoader";
-import { Sidebar }        from "./components/Sidebar";
-import { SchedulePanel }  from "./components/SchedulePanel";
-import { useTVWebSocket } from "./hooks/useWebSocket";
-import { QROverlay }      from "./QROverlay";
+import { API_URL, C, EXCLUDE, getRoomSort, groupMeshNames } from "../lib/constants";
+import { useThreeScene }  from "../hooks/useThreeScene";
+import { useAnimations }  from "../hooks/useAnimations";
+import { useModelLoader } from "../hooks/useModelLoader";
+import { Sidebar }        from "../components/Sidebar";
+import { SchedulePanel }  from "../components/SchedulePanel";
+import { useTVWebSocket } from "../hooks/useWebSocket";
+import { QROverlay }      from "../components/QROverlay";
 
-export default function App() {
+export default function Kiosk() {
   const mountRef           = useRef(null);
   const lastActiveFloorRef = useRef(null);
   const pendingRoomRef     = useRef(null);

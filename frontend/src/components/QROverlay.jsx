@@ -1,5 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
-import { C } from "./constants";
+import { C } from "../lib/constants";
 
 const wrapStyle = {
   position: "absolute",

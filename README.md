@@ -28,17 +28,26 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 ```
 IF-Kiosk/
 ├── backend/           Express API + WebSocket server
-│   ├── index.js       Routes, WebSocket relay (kiosk ↔ phone), static file serving
+│   ├── index.js       Entry point: HTTP server + WebSocket, exported for tests
+│   ├── app.js         Express app: middleware, static files, route mounting
 │   ├── db.js          PostgreSQL connection pool
-│   └── api.test.js    API integration tests
+│   ├── routes/        One router per resource, all mounted under /api
+│   │   ├── rooms.js       Room lookup (flags + occupants + schedules) and CRUD
+│   │   ├── search.js      Cross-entity search: schedules, lecturers, rooms, bookings
+│   │   ├── dosen.js       Lecturer CRUD
+│   │   ├── jadwal.js      Class schedule CRUD
+│   │   ├── penghuni.js    Room occupant CRUD
+│   │   └── reservasi.js   Room booking CRUD + conflict checks
+│   ├── ws/            WebSocket relay pairing a kiosk screen with a phone
+│   ├── utils/         Day-name helpers, LAN IP detection
+│   └── tests/         API + WebSocket integration tests
 ├── frontend/          React + Vite kiosk UI
 │   ├── src/
-│   │   ├── App.jsx            Main kiosk screen (3D scene + panels)
-│   │   ├── MobileControl.jsx  Phone remote-control UI (served at /mobile)
-│   │   ├── QROverlay.jsx      QR code overlay for pairing a phone
-│   │   ├── Admin.jsx          Admin CRUD panel (served at /admin)
-│   │   ├── hooks/              Three.js scene, animations, model loading, WebSocket
-│   │   └── components/         Sidebar, SchedulePanel
+│   │   ├── main.jsx       Entry point: picks a page from window.location.pathname
+│   │   ├── pages/         One per route — Kiosk (/), MobileControl (/mobile), Admin (/admin)
+│   │   ├── components/    Sidebar, SchedulePanel, QROverlay
+│   │   ├── hooks/         Three.js scene, animations, model loading, WebSocket
+│   │   └── lib/           Shared constants and camera presets
 │   └── public/
 │       ├── models/    3D building/floor models (.obj/.mtl)
 │       └── picture/   Lecturer photos
@@ -122,7 +131,7 @@ The backend serves `frontend/dist` as static files and exposes `/mobile` and `/a
 ## How QR phone control works
 
 1. The kiosk opens a WebSocket connection as `role=tv` and receives a session ID and a `mobileUrl`.
-2. That URL is rendered as a QR code (`QROverlay.jsx`). Scanning it opens `/mobile?sid=...` on the visitor's phone, which connects as `role=phone`.
+2. That URL is rendered as a QR code (`components/QROverlay.jsx`). Scanning it opens `/mobile?sid=...` on the visitor's phone, which connects as `role=phone`.
 3. The backend relays messages between the two WebSocket connections for that session — the phone sends camera transforms and navigation actions, the kiosk applies them to the 3D scene.
 4. A phone session auto-disconnects after a period of inactivity, and only one phone can control a given kiosk session at a time.
 

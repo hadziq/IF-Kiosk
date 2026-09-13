@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { C, displayName, DAYS } from "../constants";
+import { C, displayName, DAYS } from "../lib/constants";
 
 const JS_DAY_TO_ID = ["", ...DAYS, ""];
 const trimSecs = (t) => t?.slice(0, 5) ?? t;

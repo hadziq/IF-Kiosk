@@ -2,8 +2,8 @@ import { useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader }    from "three/examples/jsm/loaders/OBJLoader";
 import { MTLLoader }    from "three/examples/jsm/loaders/MTLLoader";
-import { C, getExt } from "../constants";
-import { applyDefaultCameraView, getMarkerDefaultCameraView } from "../cameraView";
+import { C, getExt } from "../lib/constants";
+import { applyDefaultCameraView, getMarkerDefaultCameraView } from "../lib/cameraView";
 
 export function useModelLoader({
   sceneRef,

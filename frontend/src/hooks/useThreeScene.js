@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { C } from "../constants";
-import { applyDefaultCameraView } from "../cameraView";
+import { C } from "../lib/constants";
+import { applyDefaultCameraView } from "../lib/cameraView";
 
 export function useThreeScene(mountRef) {
   const sceneRef = useRef({});

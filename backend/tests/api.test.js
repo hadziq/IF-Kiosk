@@ -1,6 +1,6 @@
 const request   = require("supertest");
 const WebSocket = require("ws");
-const server    = require("./index");
+const server    = require("../index");
 
 // Helper: get the port the server is actually bound to (Supertest binds ephemeral)
 function getBaseUrl() {

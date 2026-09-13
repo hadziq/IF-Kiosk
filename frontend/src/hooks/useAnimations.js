@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import * as THREE from "three";
-import { FLOORS, tcFloorByName } from "../constants";
+import { FLOORS, tcFloorByName } from "../lib/constants";
 
 export function useAnimations(sceneRef) {
   const floorAnimRef    = useRef(null);
