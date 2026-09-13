@@ -4,6 +4,21 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 
 ![Kiosk hero](frontend/src/assets/hero.png)
 
+## Contents
+
+- [Features](#features)
+- [How it fits together](#how-it-fits-together)
+- [Tech stack](#tech-stack)
+- [Project structure](#project-structure)
+- [Getting started](#getting-started)
+- [Environment variables](#environment-variables)
+- [REST API](#rest-api)
+- [WebSocket protocol](#websocket-protocol)
+- [Lecturer photos](#lecturer-photos)
+- [Testing](#testing)
+- [Deploying to a kiosk](#deploying-to-a-kiosk)
+- [Known limitations](#known-limitations)
+
 ## Features
 
 - **Interactive 3D building model** — Three.js-rendered floors (`Lantai 1`–`4`) with animated transitions, room highlighting, and camera fly-to for selected rooms.
@@ -14,6 +29,37 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 - **Admin panel** (`/admin`) — CRUD management of rooms, lecturers, room occupants, and reservations.
 - **LAN / tunnel friendly** — auto-detects the kiosk's local IP for same-WiFi QR access, or use `PUBLIC_BACKEND_URL` / `PUBLIC_FRONTEND_URL` (e.g. ngrok) for cross-network access.
 
+## How it fits together
+
+One Express process serves the REST API, the WebSocket relay, and — in production — the built frontend itself. The frontend is a single bundle that picks one of three pages from `window.location.pathname`:
+
+```mermaid
+flowchart LR
+    subgraph browser["One React bundle, three pages"]
+        kiosk["Kiosk at /<br/>3D scene, search, schedules"]
+        mobile["MobileControl at /mobile<br/>phone remote"]
+        admin["Admin at /admin<br/>CRUD panel"]
+    end
+
+    subgraph server["Express, single process<br/>also serves frontend/dist"]
+        rest["REST API<br/>/api/*"]
+        relay["WebSocket relay<br/>/ws"]
+    end
+
+    db[("PostgreSQL")]
+
+    kiosk --> rest
+    admin --> rest
+    mobile -->|"backendUrl from the QR link"| rest
+
+    kiosk <-->|"role=tv"| relay
+    mobile <-->|"role=phone plus sid"| relay
+
+    rest --> db
+```
+
+The kiosk never talks to the phone directly. It opens a WebSocket as `role=tv`, receives a session id, and renders a QR code containing a `/mobile` URL carrying that id. When the phone scans it and connects as `role=phone`, the server relays every message between the two sockets verbatim.
+
 ## Tech stack
 
 | Layer     | Stack |
@@ -22,6 +68,7 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 | Backend   | Node.js, Express 5, `ws` (WebSocket), `pg` |
 | Database  | PostgreSQL |
 | Testing   | Jest + Supertest (backend) |
+| Tooling   | npm workspaces (single lockfile at the repo root) |
 
 ## Project structure
 
@@ -50,7 +97,7 @@ IF-Kiosk/
 │   │   └── lib/           Shared constants and camera presets
 │   └── public/
 │       ├── models/    3D building/floor models (.obj/.mtl)
-│       └── picture/   Lecturer photos
+│       └── picture/   Lecturer photos (WebP)
 └── database/
     ├── schema.sql     Table definitions (ruangan, dosen, jadwal, reservasi, ...)
     └── jadwal.sql     Seed data for class schedules
@@ -69,11 +116,9 @@ IF-Kiosk/
 npm install
 ```
 
-This installs dependencies for the root workspace as well as `backend` and `frontend` (npm workspaces).
+One command from the repo root installs everything. `backend` and `frontend` are npm workspaces sharing a single `package-lock.json`; do not run `npm install` inside those folders.
 
 ### 2. Set up the database
-
-Create a database and load the schema (and optional seed data):
 
 ```bash
 createdb ekiosk
@@ -81,59 +126,138 @@ psql -d ekiosk -f database/schema.sql
 psql -d ekiosk -f database/jadwal.sql
 ```
 
-### 3. Configure environment variables
+`schema.sql` creates five tables: `ruangan` (rooms), `dosen` (lecturers), `penghuni_ruangan` (which lecturers sit in which room), `jadwal` (weekly class schedule), and `reservasi` (ad-hoc room bookings). `jadwal.sql` is optional seed data.
 
-Copy the example env file and fill in your own values:
+### 3. Configure environment variables
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-| Variable              | Description |
-|-----------------------|--------------|
-| `PORT`                 | Backend server port (default `8000`) |
-| `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, `DB_PORT` | PostgreSQL connection details |
-| `JWT_SECRET`           | Random secret, 32+ characters |
-| `FRONTEND_URL`         | Frontend origin for CORS (default `http://localhost:5173`) |
-| `PUBLIC_BACKEND_URL` / `PUBLIC_FRONTEND_URL` | Public URLs (e.g. ngrok tunnels) for cross-network QR access; leave unset to use the local IP for same-WiFi access |
-| `NODE_ENV`             | `development` / `production` |
-| `DB_LOGGING`           | Set `true` to log SQL queries |
+Fill in your database details — see [Environment variables](#environment-variables) below.
 
-> **Never commit `backend/.env`.** It holds real database credentials and secrets — only `backend/.env.example` should be tracked in git.
+> **Never commit `backend/.env`.** It holds real database credentials. Only `backend/.env.example` belongs in git.
 
 ### 4. Run in development
-
-From the project root, this starts the backend (with `--watch`) and the Vite dev server together:
 
 ```bash
 npm run dev
 ```
 
+This starts the backend on `:8000` (with `node --watch`) and the Vite dev server on `:5173` together.
+
 - Kiosk UI: http://localhost:5173
 - Backend API: http://localhost:8000
 
-Or run them independently:
+Or run them separately:
 
 ```bash
 npm run dev:backend
 npm run dev:frontend
 ```
 
+In development the browser calls the API at `http://localhost:8000` directly rather than through Vite's proxy, which works because CORS is wide open — see [Known limitations](#known-limitations). The phone is the exception: it receives an absolute backend URL inside the QR link, so it never needs to guess.
+
 ### 5. Build for production
 
 ```bash
 npm run build     # builds the frontend into frontend/dist
-npm start          # serves the API and the built frontend from the backend
+npm start         # serves the API and the built frontend from the backend
 ```
 
-The backend serves `frontend/dist` as static files and exposes `/mobile` and `/admin` as SPA entry points.
+The backend serves `frontend/dist` as static files, with `/mobile` and `/admin` falling through to the SPA shell. One process, one port.
 
-## How QR phone control works
+## Environment variables
 
-1. The kiosk opens a WebSocket connection as `role=tv` and receives a session ID and a `mobileUrl`.
-2. That URL is rendered as a QR code (`components/QROverlay.jsx`). Scanning it opens `/mobile?sid=...` on the visitor's phone, which connects as `role=phone`.
-3. The backend relays messages between the two WebSocket connections for that session — the phone sends camera transforms and navigation actions, the kiosk applies them to the 3D scene.
-4. A phone session auto-disconnects after a period of inactivity, and only one phone can control a given kiosk session at a time.
+All of these are read by `backend/`, from `backend/.env`. Every variable below is optional — the defaults produce a working local setup against a database named `ekiosk`.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `8000` | Port the backend listens on. |
+| `DATABASE_URL` | — | Full PostgreSQL connection string. When set, it wins and every `DB_*` variable below is ignored. |
+| `DB_HOST` | `localhost` | Database host. |
+| `DB_PORT` | `5432` | Database port. |
+| `DB_USER` | `postgres` | Database user. |
+| `DB_PASS` | `postgres` | Database password. `DB_PASSWORD` is accepted as an alias. |
+| `DB_NAME` | `ekiosk` | Database name. |
+| `FRONTEND_PORT` | `5173` | Only used to build the QR-code URL in development, when the phone loads the Vite dev server rather than the built app. |
+| `PUBLIC_BACKEND_URL` | auto-detected LAN IP | Absolute backend URL to embed in the QR code. Set this when the phone cannot reach the kiosk's LAN address — e.g. behind an ngrok tunnel. |
+| `PUBLIC_FRONTEND_URL` | auto-detected LAN IP | Absolute frontend URL to embed in the QR code, same reasoning. |
+
+If neither `PUBLIC_*` variable is set, the backend picks the machine's LAN address itself, preferring a real private address over the `.1` / `.254` gateways that Docker and VMware adapters hand out (`backend/utils/network.js`). That covers the common case: kiosk and phone on the same WiFi.
+
+**A note on `backend/db.js`:** the pool runs `SELECT 1` at startup and calls `process.exit(1)` if the database is unreachable. A backend that refuses to start is almost always a database connection problem — check the logged error before anything else.
+
+## REST API
+
+All endpoints live under `/api` and return JSON. Errors are `{ "error": "..." }` with status 404 (not found), 409 (booking conflict), or 500.
+
+### Read
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api/rooms` | All rooms, ordered by floor then name. |
+| `GET` | `/api/rooms/:roomName` | One room by **name**, with its occupants, weekly schedule and today's remaining bookings in a single response. Matches names with spaces or underscores interchangeably. |
+| `GET` | `/api/search?q=&day=` | Cross-entity search over schedules, lecturers, rooms and today's bookings. Needs `q` of at least 2 characters, otherwise returns `[]`. Schedule results only appear on weekdays; `day` overrides which weekday is assumed. |
+
+### Manage
+
+Each resource exposes the same four operations. These back the `/admin` panel.
+
+| Resource | Path | Table |
+|---|---|---|
+| Rooms | `GET·POST /api/rooms`, `PUT·DELETE /api/rooms/:id` | `ruangan` |
+| Lecturers | `GET·POST /api/dosen`, `PUT·DELETE /api/dosen/:id` | `dosen` |
+| Schedules | `GET·POST /api/jadwal`, `PUT·DELETE /api/jadwal/:id` | `jadwal` |
+| Occupants | `GET·POST /api/penghuni`, `PUT·DELETE /api/penghuni/:id` | `penghuni_ruangan` |
+| Bookings | `GET·POST /api/reservasi`, `PUT·DELETE /api/reservasi/:id` | `reservasi` |
+
+Note that `GET /api/rooms/:roomName` looks up by name while `PUT`/`DELETE /api/rooms/:id` address by numeric id — the read path serves the kiosk, which knows a room by the label on its 3D mesh.
+
+Bookings are validated on write: creating or updating a `reservasi` returns **409** if it overlaps a class in `jadwal` on that weekday, or another booking on that date. `GET /api/reservasi` also deletes bookings that have already ended before returning the list.
+
+## WebSocket protocol
+
+One endpoint, `/ws`, with the role chosen by query string.
+
+| Connect as | Query | Meaning |
+|---|---|---|
+| Kiosk | `/ws?role=tv` | Opens a new session. |
+| Phone | `/ws?role=phone&sid=<id>` | Joins an existing session. |
+
+Anything else is closed with code **1008**. So is a phone presenting an unknown `sid`. A second phone joining a session that already has one is closed with **1000** and the reason `session already in use` — one phone per kiosk at a time.
+
+**Messages from the server:**
+
+| Type | Sent to | Meaning |
+|---|---|---|
+| `session` | kiosk | `{ type, sid, mobileUrl }` — issued immediately on connect. `mobileUrl` is what goes in the QR code. |
+| `phoneConnected` | kiosk | A phone has paired; the kiosk responds by pushing its current state. |
+| `phoneDisconnected` | kiosk | The phone went away, or timed out. |
+
+**Messages relayed between the pair:**
+
+| Type | Direction | Shape |
+|---|---|---|
+| `cmd` | phone → kiosk | `{ type: "cmd", action, payload }` where `action` is one of `selectFloor`, `selectRoom`, `selectFloorAndRoom`, `back`, `cameraRotate`, `cameraZoom`, `cameraPan`, `cameraTransform`, `cameraReset`. |
+| `state` | kiosk → phone | Current floor, selected room and camera state, so the phone UI can mirror the screen. |
+
+A phone that sends nothing for **one minute** is disconnected (`PHONE_IDLE_MS` in `backend/ws/index.js`), which frees the session for the next visitor.
+
+## Lecturer photos
+
+Photos live in `frontend/public/picture/` and are looked up **by the lecturer's exact name** from the `dosen` table:
+
+```js
+`/picture/${encodeURIComponent(name)}.webp`   // frontend/src/components/SchedulePanel.jsx
+```
+
+So a row with `dosen.nama = "Dr. Sarwosri, S.Kom., MT."` needs a file named exactly `Dr. Sarwosri, S.Kom., MT..webp` — trailing dot and all. There is no mapping table; the filename *is* the key.
+
+- **Adding a lecturer photo:** save it as WebP, 1024×1024, named byte-for-byte after `dosen.nama`.
+- **A missing or misspelled file is not an error.** `SchedulePanel` catches the failed load and renders the lecturer's initials instead, so a typo shows up as a silent fallback rather than a broken image.
+
+These were originally 1024×1024 PNGs averaging 1.1 MB each — 56 MB for 50 portraits. They are now WebP at the same resolution, 2 MB in total, which is visually indistinguishable at the 150px the UI actually renders.
 
 ## Testing
 
@@ -141,6 +265,23 @@ The backend serves `frontend/dist` as static files and exposes `/mobile` and `/a
 npm --prefix backend run test
 ```
 
-## Admin panel
+`backend/tests/api.test.js` covers the REST endpoints and the WebSocket pairing flow with Jest and Supertest.
 
-Visit `/admin` to manage rooms (`ruangan`), lecturers (`dosen`), room occupants, and reservations through a CRUD UI backed by the `/api/*` REST endpoints.
+**These tests need a running PostgreSQL.** They exercise real queries, and `backend/db.js` exits the process if it cannot connect — so a failure that looks like a crash on startup usually means the database is down or `backend/.env` is wrong, not that the code broke.
+
+## Deploying to a kiosk
+
+1. `npm run build`, then `npm start`. The backend serves the API and the built frontend from a single port.
+2. Point the kiosk browser at `http://<host>:8000` in fullscreen/kiosk mode.
+3. If phones will be on the same WiFi, nothing else is needed — the QR code gets the LAN address automatically.
+4. If they will not, set `PUBLIC_BACKEND_URL` and `PUBLIC_FRONTEND_URL` to publicly reachable URLs before starting.
+
+## Known limitations
+
+Worth knowing before putting this on a public network:
+
+- **The admin panel has no authentication.** `/admin` and every write endpoint under `/api` are open to anyone who can reach the port. A `JWT_SECRET` used to appear in `.env.example`, but nothing in the codebase reads it and no auth is implemented — it has been removed so it does not imply otherwise. Put the kiosk on a trusted network, or add auth before exposing it.
+- **CORS is unrestricted.** `app.use(cors())` accepts every origin.
+- **Sessions are held in memory.** The kiosk↔phone pairing lives in a `Map` in one process, so restarting the backend drops every active session, and running more than one instance behind a load balancer will not work without a shared store.
+- **The frontend ships as one bundle** of roughly 850 KB (225 KB gzipped), dominated by Three.js. Fine for a kiosk on a wired connection; worth code-splitting if the phone page is ever loaded over mobile data.
+- **`lint` reports pre-existing warnings** about refs being accessed during render in `useWebSocket.js` and elsewhere. They are long-standing and unrelated to the current structure.
