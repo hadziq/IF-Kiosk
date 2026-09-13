@@ -28,7 +28,7 @@ function getInitials(name = "") {
 }
 
 function dosenPhotoPath(name = "") {
-  return `/picture/${encodeURIComponent(name)}.png`;
+  return `/picture/${encodeURIComponent(name)}.webp`;
 }
 
 function DosenPhoto({ name }) {

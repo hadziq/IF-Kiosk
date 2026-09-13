@@ -10,6 +10,7 @@
 
 # True binaries: never convert, never diff.
 *.png  binary
+*.webp binary
 
 # Generated: collapse in pull-request diffs.
 package-lock.json linguist-generated=true
