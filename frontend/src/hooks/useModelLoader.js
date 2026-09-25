@@ -156,10 +156,15 @@ export function useModelLoader({
           : child.material.clone();
       }
 
+      // Only lit materials have an emissive uniform. Setting `emissive` on a
+      // MeshBasicMaterial (the "you are here" marker) makes the renderer throw
+      // on every frame, so leave those materials' emissive alone.
       const highlight = (mat) => {
         const h = mat.clone();
-        h.emissive = new THREE.Color(0x22aa44);
-        h.emissiveIntensity = 0.8;
+        if (h.emissive) {
+          h.emissive = new THREE.Color(0x22aa44);
+          h.emissiveIntensity = 0.8;
+        }
         h.transparent = true;
         h.opacity     = 1;
         h.depthWrite  = true;
@@ -169,8 +174,10 @@ export function useModelLoader({
         const d = mat.clone();
         d.transparent = true;
         d.opacity     = roomName ? 0.2 : 1;
-        d.emissive    = new THREE.Color(0x000000);
-        d.emissiveIntensity = 0;
+        if (d.emissive) {
+          d.emissive = new THREE.Color(0x000000);
+          d.emissiveIntensity = 0;
+        }
         return d;
       };
 

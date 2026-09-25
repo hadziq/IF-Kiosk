@@ -2,6 +2,8 @@
 
 An interactive 3D digital directory kiosk for the Informatics building (Teknik Informatika / TC), built for touchscreen displays. Visitors explore an interactive 3D model of the building floor by floor, look up rooms, lecturers, and class schedules, and can take over navigation from their own phone by scanning a QR code.
 
+![The kiosk on Lantai 3 with the NETICS lab selected: the room is highlighted in the 3D model, and the right-hand panel lists its lecturers and today's classes](docs/screenshots/kiosk.webp)
+
 ## Contents
 
 - [Features](#features)
@@ -59,6 +61,13 @@ flowchart LR
 
 The kiosk never talks to the phone directly. It opens a WebSocket as `role=tv`, receives a session id, and renders a QR code containing a `/mobile` URL carrying that id. When the phone scans it and connects as `role=phone`, the server relays every message between the two sockets verbatim.
 
+<img src="docs/screenshots/phone.webp" alt="The /mobile page on a phone: search, the room list for the current floor, and a touch pad that rotates, pans and zooms the kiosk's camera" width="260" align="right">
+
+The phone gets search, the room list of whichever floor the kiosk shows, and a touch pad for the kiosk's camera. The room panel on the kiosk (the right-hand column in the screenshot above) only appears while a phone is paired.
+
+<br clear="right">
+
+
 ## Tech stack
 
 | Layer     | Stack |
@@ -97,6 +106,7 @@ IF-Kiosk/
 │   └── public/
 │       ├── models/    3D building/floor models (.obj/.mtl)
 │       └── picture/   Lecturer photos (WebP)
+├── docs/screenshots/  Images used in this README
 └── database/
     ├── schema.sql     Drops and recreates every table, then seeds rooms, lecturers and occupants
     └── jadwal.sql     Seed data for class schedules (run after schema.sql)
@@ -129,7 +139,7 @@ psql -d ekiosk -f database/jadwal.sql
 
 > **`schema.sql` starts by dropping every table.** Running it again wipes all data, including anything entered through `/admin`. Use it to set up a fresh database, never against one that is in use.
 
-A fresh load should give 66 rooms, 55 lecturers, 52 occupant rows and 146 schedule rows. If a count comes up short, see [Seed data fails silently](#seed-data-fails-silently).
+A fresh load should give 79 rooms, 55 lecturers, 52 occupant rows and 146 schedule rows. If a count comes up short, see [Seed data fails silently](#seed-data-fails-silently).
 
 ### 3. Configure environment variables
 
@@ -274,7 +284,9 @@ When a floor loads, `useModelLoader` collects every named mesh. `Sidebar` then d
 - **`ruangan.nama_ruang` must equal the mesh name.** The match is case-sensitive: a mesh called `NETICS` will not find a row called `Netics`.
 - **Spaces and underscores are interchangeable.** OBJ exporters turn spaces into underscores, so the API matches `Aula_Handayani` to a row named `Aula Handayani`. Buttons display underscores as spaces.
 - **`ruangan.lantai` must be the floor's file name**, e.g. `Lantai 3`. Search results use it to decide which model to load before jumping to the room.
-- **A mesh with no matching row is not an error.** The panel shows the room name and nothing else. Toilets and the plaza are left like this on purpose. On a real room, it means the names do not match.
+- **A mesh with no matching row is not an error.** The panel shows the room name and nothing else, so a typo in either name fails quietly. Every room mesh on floors 1–4 currently has a row. The only exceptions are the two small `Akses_SPMB_*` markers on Lantai 3, which are not rooms.
+- **Mesh names must be unique across floors**, because `nama_ruang` is unique. Rooms that repeat on every floor carry a floor suffix. The toilets follow `Toilet_<Laki-laki|Perempuan>_<Utara|Selatan>_L<floor>`, e.g. `Toilet_Perempuan_Selatan_L2`. In the models, north (*Utara*) is the side with the IF_101 / IF_201 / RPL row, and south (*Selatan*) is the side with IF_110 / IF_222 / LP_2.
+- **`TC.obj` names are never looked up.** The overview model has its own, older labels (`Toilet_Cewe_A`, `IF_114`, …). Only the four floor models need to agree with the database.
 
 What the panel shows is driven by the flags on the row, and they combine freely. `LP_2`, for example, is a lab and a classroom and a lecturer office at once:
 

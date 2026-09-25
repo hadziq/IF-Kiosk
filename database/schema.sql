@@ -97,6 +97,17 @@ INSERT INTO ruangan (nama_ruang, lantai, is_kelas, is_reservable) VALUES
   ('IF_112', 'Lantai 1', TRUE, TRUE),
   ('IF_113', 'Lantai 1', TRUE, TRUE);
 
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
+  ('Plaza Supeno', 'Lantai 1', TRUE, 'Plaza Supeno');
+
+-- Toilets: floors 1-3 each have a men's and a women's toilet on the north
+-- side (the IF_101 / IF_201 / RPL row) and on the south side.
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
+  ('Toilet_Laki-laki_Utara_L1',   'Lantai 1', TRUE, 'Toilet Laki-laki Mahasiswa - Sisi Utara'),
+  ('Toilet_Perempuan_Utara_L1',   'Lantai 1', TRUE, 'Toilet Perempuan Mahasiswa - Sisi Utara'),
+  ('Toilet_Laki-laki_Selatan_L1', 'Lantai 1', TRUE, 'Toilet Laki-laki Mahasiswa - Sisi Selatan'),
+  ('Toilet_Perempuan_Selatan_L1', 'Lantai 1', TRUE, 'Toilet Perempuan Mahasiswa - Sisi Selatan');
+
 -- ============================================================
 -- Seed: Ruangan — Lantai 2 (Ruang Dosen & Ruangan)
 -- ============================================================
@@ -145,8 +156,18 @@ INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
   ('Ruang Sidang','Lantai 2', TRUE, 'Ruang Sidang'),
   ('Tata Usaha',  'Lantai 2', TRUE, 'Tata Usaha');
 
+-- Kelas only (auditorium — not a lab)
+INSERT INTO ruangan (nama_ruang, lantai, is_kelas, is_reservable) VALUES
+  ('Aula Handayani', 'Lantai 2', TRUE, TRUE);
+
 INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
-  ('SPMB Jatim',      'Lantai 4', TRUE, 'SPMB Jatim'),
+  ('Toilet_Laki-laki_Utara_L2',   'Lantai 2', TRUE, 'Toilet Laki-laki Dosen - Sisi Utara'),
+  ('Toilet_Perempuan_Utara_L2',   'Lantai 2', TRUE, 'Toilet Perempuan Dosen - Sisi Utara'),
+  ('Toilet_Laki-laki_Selatan_L2', 'Lantai 2', TRUE, 'Toilet Laki-laki Dosen - Sisi Selatan'),
+  ('Toilet_Perempuan_Selatan_L2', 'Lantai 2', TRUE, 'Toilet Perempuan Dosen - Sisi Selatan');
+
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
+  ('SPMB Jatim',     'Lantai 4', TRUE, 'SPMB Jatim'),
   ('SPMB Surabaya','Lantai 4', TRUE, 'SPMB Surabaya');
 
 -- ============================================================
@@ -177,14 +198,16 @@ INSERT INTO ruangan (nama_ruang, lantai, is_lab, is_kelas, is_ruang_dosen, is_re
   ('LP_2',   'Lantai 3', TRUE, TRUE, TRUE, TRUE, 'Lab Pemrograman 2'),
   ('NETICS', 'Lantai 3', TRUE, TRUE, TRUE, TRUE, 'Teknologi Jaringan dan Keamanan Siber Cerdas');
 
--- Kelas only (auditorium — not a lab)
-INSERT INTO ruangan (nama_ruang, lantai, is_kelas, is_reservable) VALUES
-  ('Aula Handayani', 'Lantai 3', TRUE, TRUE);
-
 -- Label-only rooms
 INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
   ('Sekretariat HMTC', 'Lantai 3', TRUE, 'Sekretariat HMTC'),
   ('Co Working Space IUP',  'Lantai 3', TRUE, 'Co-Working Space IUP');
+
+INSERT INTO ruangan (nama_ruang, lantai, is_ruangan, keterangan) VALUES
+  ('Toilet_Laki-laki_Utara_L3',   'Lantai 3', TRUE, 'Toilet Laki-laki Mahasiswa - Sisi Utara'),
+  ('Toilet_Perempuan_Utara_L3',   'Lantai 3', TRUE, 'Toilet Perempuan Mahasiswa - Sisi Utara'),
+  ('Toilet_Laki-laki_Selatan_L3', 'Lantai 3', TRUE, 'Toilet Laki-laki Mahasiswa - Sisi Selatan'),
+  ('Toilet_Perempuan_Selatan_L3', 'Lantai 3', TRUE, 'Toilet Perempuan Mahasiswa - Sisi Selatan');
 
 -- ============================================================
 -- Seed: Dosen

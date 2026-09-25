@@ -35747,8 +35747,8 @@ vt 0.0000 0.8333 0.0000
 vt 0.0000 0.3333 0.0000
 # 23 texture coords
 
-o Toilet_Dosen_Laki_Laki_
-g Toilet_Dosen_Laki_Laki_
+o Toilet_Laki-laki_Selatan_L2
+g Toilet_Laki-laki_Selatan_L2
 usemtl Tembok
 s 2
 f 11778/1580/2082 11777/1579/2081 11776/1578/2080 11775/1577/2079 
@@ -36851,8 +36851,8 @@ vt 0.5000 0.5000 0.0000
 vt 0.0000 0.7500 0.0000
 # 13 texture coords
 
-o Toilet_Dosen_Perempuan_
-g Toilet_Dosen_Perempuan_
+o Toilet_Perempuan_Selatan_L2
+g Toilet_Perempuan_Selatan_L2
 usemtl Tembok
 s 2
 f 12194/1603/2479 12193/1602/2478 12192/1601/2477 12191/1600/2476 
@@ -64645,8 +64645,8 @@ vt 0.0000 0.8333 0.0000
 vt 0.0000 0.3333 0.0000
 # 23 texture coords
 
-o Toilet_Dosen_Laki_Laki_
-g Toilet_Dosen_Laki_Laki_
+o Toilet_Laki-laki_Utara_L2
+g Toilet_Laki-laki_Utara_L2
 usemtl Tembok
 s 2
 f 21221/3248/4414 21222/3249/4415 21223/3250/4416 21224/3251/4417 
@@ -65755,8 +65755,8 @@ vt 0.5000 0.5000 0.0000
 vt 0.0000 0.7500 0.0000
 # 13 texture coords
 
-o Toilet_Dosen_Perempuan_
-g Toilet_Dosen_Perempuan_
+o Toilet_Perempuan_Utara_L2
+g Toilet_Perempuan_Utara_L2
 usemtl Tembok
 s 2
 f 21637/3271/4808 21638/3272/4809 21639/3273/4810 21640/3274/4811 
