@@ -988,55 +988,55 @@ INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen
          (SELECT id FROM dosen WHERE nama = 'Aldinata Rizky Revanda, S.Kom., M.Kom.' LIMIT 1)
   FROM ruangan r WHERE r.nama_ruang = 'LP_2';
 
--- Senin 10:00:00-12:50:00 | Netics | IG, BA
+-- Senin 10:00:00-12:50:00 | NETICS | IG, BA
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id, dosen_id_2)
   SELECT
          r.id, 'Senin', '10:00:00', '12:50:00', 'IF_Topik Khusus PKT T (Di Lab RMK PKT)',
          (SELECT id FROM dosen WHERE nama = 'Ilham Gurat Adillion, S.Kom., M.Eng.' LIMIT 1),
          (SELECT id FROM dosen WHERE nama = 'Dr. Ir. Bilqis Amaliah, S.Kom., M.Kom.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
--- Selasa 13:30:00-16:20:00 | Netics | IM
+-- Selasa 13:30:00-16:20:00 | NETICS | IM
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id)
   SELECT
          r.id, 'Selasa', '13:30:00', '16:20:00', 'IF_Pengantar Pengembangan Game Z',
          (SELECT id FROM dosen WHERE nama = 'Imam Kuswardayan, S.Kom., MT.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
--- Rabu 13:30:00-16:20:00 | Netics | RS
+-- Rabu 13:30:00-16:20:00 | NETICS | RS
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id)
   SELECT
          r.id, 'Rabu', '13:30:00', '16:20:00', 'IF_Audit Sistem T',
          (SELECT id FROM dosen WHERE nama = 'Prof. Drs. Ec. Ir. Riyanarto Sarno, M.Sc., Ph.D.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
--- Rabu 15:30:00-19:20:00 | Netics | DO
+-- Rabu 15:30:00-19:20:00 | NETICS | DO
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id)
   SELECT
          r.id, 'Rabu', '15:30:00', '19:20:00', 'IF_Dasar Pemrograman R (IF dan RPL)',
          (SELECT id FROM dosen WHERE nama = 'Prof. Daniel Oranova Siahaan, S.Kom., M.Sc. PD.Eng.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
--- Kamis 07:00:00-10:50:00 | Netics | KR
+-- Kamis 07:00:00-10:50:00 | NETICS | KR
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id)
   SELECT
          r.id, 'Kamis', '07:00:00', '10:50:00', 'IF_Sistem Basis Data R',
          (SELECT id FROM dosen WHERE nama = 'Dr. Kelly Rossa Sungkono, S.Kom., M.Kom.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
--- Jumat 09:00:00-11:50:00 | Netics | JL
+-- Jumat 09:00:00-11:50:00 | NETICS | JL
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id)
   SELECT
          r.id, 'Jumat', '09:00:00', '11:50:00', 'IF_Aljabar Linier R',
          (SELECT id FROM dosen WHERE nama = 'Prof. Dr. Ir. Joko Lianto Buliali, M.Sc.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
--- Jumat 13:30:00-16:20:00 | Netics | RA
+-- Jumat 13:30:00-16:20:00 | NETICS | RA
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id)
   SELECT
          r.id, 'Jumat', '13:30:00', '16:20:00', 'IF_Sistem Digital R',
          (SELECT id FROM dosen WHERE nama = 'Dr. Radityo Anggoro, S.Kom., M.Sc.' LIMIT 1)
-  FROM ruangan r WHERE r.nama_ruang = 'Netics';
+  FROM ruangan r WHERE r.nama_ruang = 'NETICS';
 
 -- Jumat 13:30:00-15:20:00 | Aula Handayani | AL, RN, NF
 INSERT INTO jadwal (ruangan_id, hari, jam_mulai, jam_selesai, mata_kuliah, dosen_id, dosen_id_2, dosen_id_3)

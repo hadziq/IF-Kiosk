@@ -243,7 +243,8 @@ INSERT INTO dosen (nama) VALUES
   ('Bagus Jati Santoso, S.Kom., Ph.D.'), 
   ('Abdul Munif, S.Kom., M.Sc.Eng.'), 
   ('Agus Budi Raharjo, S.Kom., M.Kom., Ph.D.'), 
-  ('Ilham Gurat Adillion, S.Kom., M.Eng.');
+  ('Ilham Gurat Adillion, S.Kom., M.Eng.'),
+  ('Prof. Amitava Datta, Ph.D.');
 
 -- ============================================================
 -- Seed: Penghuni Ruangan — Lantai 2
@@ -454,13 +455,13 @@ INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
 -- Seed: Penghuni Ruangan — Lantai 3
 -- ============================================================
 
--- Netics
+-- NETICS
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 1 FROM ruangan r, dosen d
-  WHERE r.nama_ruang = 'Netics' AND d.nama = 'Dr. Baskoro Adi P., S.Kom., M.Kom.';
+  WHERE r.nama_ruang = 'NETICS' AND d.nama = 'Dr. Baskoro Adi P., S.Kom., M.Kom.';
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
   SELECT r.id, d.id, 2 FROM ruangan r, dosen d
-  WHERE r.nama_ruang = 'Netics' AND d.nama = 'Hudan Studiawan, S.Kom., M.Kom., Ph.D.';
+  WHERE r.nama_ruang = 'NETICS' AND d.nama = 'Hudan Studiawan, S.Kom., M.Kom., Ph.D.';
 
 -- KBJ
 INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)

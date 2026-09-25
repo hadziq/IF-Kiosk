@@ -1,12 +1,15 @@
+// Integration tests: these run against the real database configured in
+// backend/.env (or DATABASE_URL). They create a throwaway room and lecturer,
+// both named with TEST_PREFIX, and delete them again in the final afterAll —
+// deleting the room cascades to every schedule and booking made on it.
+
 const request   = require("supertest");
 const WebSocket = require("ws");
 const server    = require("../index");
 
-// Helper: get the port the server is actually bound to (Supertest binds ephemeral)
-function getBaseUrl() {
-  const addr = server.address();
-  return `http://localhost:${addr.port}`;
-}
+const TEST_PREFIX = "TEST_JEST_";
+const TEST_ROOM   = `${TEST_PREFIX}ROOM`;
+
 function getWsUrl(path) {
   const addr = server.address();
   return `ws://localhost:${addr.port}${path}`;
@@ -18,13 +21,15 @@ function getWsUrl(path) {
 function connectWs(path) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(getWsUrl(path));
-    ws.once("open",    ()    => resolve({ ws, firstMessage: waitForMessage(ws) }));
+    const firstMessage = waitForMessage(ws);
+    firstMessage.catch(() => {}); // not every caller awaits it
+    ws.once("open",    ()    => resolve({ ws, firstMessage }));
     ws.once("error",   (err) => reject(err));
     ws.once("close",   (code, reason) => reject(new Error(`Closed ${code}: ${reason}`)));
   });
 }
 
-/** Wait for the next message on an already-open WebSocket */
+/** Wait for the next message on a WebSocket */
 function waitForMessage(ws, timeoutMs = 3000) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("WS message timeout")), timeoutMs);
@@ -40,7 +45,37 @@ function waitForClose(ws, timeoutMs = 3000) {
   });
 }
 
-// ── Test suite ───────────────────────────────────────────────────────
+/** Next Monday as YYYY-MM-DD in local time — always in the future, so the
+ *  expired-booking cleanup in GET /api/reservasi never removes it. */
+function nextMonday() {
+  const d = new Date();
+  d.setDate(d.getDate() + (((8 - d.getDay()) % 7) || 7));
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// ── Shared fixtures ──────────────────────────────────────────────────
+
+let roomId;
+let dosenId;
+
+beforeAll(async () => {
+  const room = await request(server).post("/api/rooms").send({
+    nama_ruang: TEST_ROOM, lantai: "Lantai 1", is_kelas: true, is_reservable: true,
+  });
+  roomId = room.body.id;
+
+  const dosen = await request(server).post("/api/dosen").send({ nama: `${TEST_PREFIX}Dosen` });
+  dosenId = dosen.body.id;
+});
+
+afterAll(async () => {
+  // Room first: it cascades to jadwal, whose dosen_id is ON DELETE RESTRICT.
+  if (roomId)  await request(server).delete(`/api/rooms/${roomId}`);
+  if (dosenId) await request(server).delete(`/api/dosen/${dosenId}`);
+});
+
+// ── GET /api/rooms ───────────────────────────────────────────────────
 
 describe("GET /api/rooms", () => {
   it("returns 200 with an array", async () => {
@@ -51,7 +86,6 @@ describe("GET /api/rooms", () => {
 
   it("each room has expected fields", async () => {
     const res = await request(server).get("/api/rooms");
-    if (res.body.length === 0) return; // skip if DB is empty
     const room = res.body[0];
     expect(room).toHaveProperty("id");
     expect(room).toHaveProperty("nama_ruang");
@@ -62,36 +96,28 @@ describe("GET /api/rooms", () => {
 // ── GET /api/rooms/:roomName ─────────────────────────────────────────
 
 describe("GET /api/rooms/:roomName", () => {
-  let existingRoomName;
-
-  beforeAll(async () => {
-    const res = await request(server).get("/api/rooms");
-    if (res.body.length > 0) existingRoomName = res.body[0].nama_ruang;
-  });
-
   it("returns 404 for a room that does not exist", async () => {
     const res = await request(server).get("/api/rooms/RUANG_TIDAK_ADA_XYZ_999");
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty("error");
   });
 
-  it("returns 200 with room data for a valid room", async () => {
-    if (!existingRoomName) return; // skip if DB is empty
-    const res = await request(server).get(`/api/rooms/${encodeURIComponent(existingRoomName)}`);
+  it("returns the room with occupants, schedules and reservations", async () => {
+    const res = await request(server).get(`/api/rooms/${TEST_ROOM}`);
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("nama_ruang", existingRoomName);
-    expect(res.body).toHaveProperty("occupants");
-    expect(res.body).toHaveProperty("schedules");
+    expect(res.body).toHaveProperty("nama_ruang", TEST_ROOM);
     expect(Array.isArray(res.body.occupants)).toBe(true);
     expect(Array.isArray(res.body.schedules)).toBe(true);
+    expect(Array.isArray(res.body.reservations)).toBe(true);
   });
 
-  it("matches room name with underscores instead of spaces", async () => {
-    if (!existingRoomName) return;
-    // replace spaces with underscores — the API normalises this
-    const underscored = existingRoomName.replace(/ /g, "_");
-    const res = await request(server).get(`/api/rooms/${encodeURIComponent(underscored)}`);
+  it("matches a name with spaces when asked with underscores", async () => {
+    const rooms   = (await request(server).get("/api/rooms")).body;
+    const spaced  = rooms.find((r) => r.nama_ruang.includes(" "));
+    if (!spaced) return; // needs a seeded room such as "Aula Handayani"
+    const res = await request(server).get(`/api/rooms/${spaced.nama_ruang.replace(/ /g, "_")}`);
     expect(res.status).toBe(200);
+    expect(res.body.nama_ruang).toBe(spaced.nama_ruang);
   });
 });
 
@@ -110,278 +136,197 @@ describe("GET /api/search", () => {
     expect(res.body).toEqual([]);
   });
 
-  it("returns an array for a 2+ character query", async () => {
-    const res = await request(server).get("/api/search?q=Al");
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-  });
-
   it("each result has room_name, lantai, and result_type", async () => {
     const res = await request(server).get("/api/search?q=Al");
-    if (res.body.length === 0) return;
-    const item = res.body[0];
-    expect(item).toHaveProperty("room_name");
-    expect(item).toHaveProperty("lantai");
-    expect(item).toHaveProperty("result_type");
-    expect(["schedule", "dosen", "room"]).toContain(item.result_type);
-  });
-
-  it("accepts an optional day filter without error", async () => {
-    const res = await request(server).get("/api/search?q=Al&day=Senin");
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-  });
-
-  it("day filter only returns results matching that day", async () => {
-    const res = await request(server).get("/api/search?q=Al&day=Senin");
     for (const item of res.body) {
-      if (item.result_type === "schedule") {
-        expect(item.hari).toBe("Senin");
-      }
+      expect(item).toHaveProperty("room_name");
+      expect(item).toHaveProperty("lantai");
+      expect(["schedule", "dosen", "room", "reservasi"]).toContain(item.result_type);
+    }
+  });
+
+  it("day filter only returns schedules on that day", async () => {
+    const res = await request(server).get("/api/search?q=Al&day=Senin");
+    expect(res.status).toBe(200);
+    for (const item of res.body) {
+      if (item.result_type === "schedule") expect(item.hari).toBe("Senin");
     }
   });
 });
 
-// ── POST /api/rooms/:roomName/schedules ──────────────────────────────
+// ── /api/jadwal ──────────────────────────────────────────────────────
 
-describe("POST /api/rooms/:roomName/schedules", () => {
-  const TEST_ROOM    = "TEST_ROOM_JEST_BLACKBOX";
-  const createdIds   = [];
+describe("/api/jadwal", () => {
+  let jadwalId;
 
-  afterAll(async () => {
-    // clean up schedules created during tests
-    for (const id of createdIds) {
-      await request(server).delete(`/api/schedules/${id}`);
-    }
+  const schedule = (overrides = {}) => ({
+    ruangan_id:  roomId,
+    dosen_id:    dosenId,
+    hari:        "Senin",
+    jam_mulai:   "08:00",
+    jam_selesai: "10:00",
+    mata_kuliah: "Pemrograman Web",
+    ...overrides,
   });
 
-  it("creates a new schedule and returns an id", async () => {
-    const res = await request(server)
-      .post(`/api/rooms/${TEST_ROOM}/schedules`)
-      .send({
-        hari:        "Senin",
-        jam_mulai:   "08:00",
-        jam_selesai: "10:00",
-        mata_kuliah: "Pemrograman Web",
-        kode_kelas:  "A",
-      });
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("id");
+  it("POST creates a schedule and returns the row", async () => {
+    const res = await request(server).post("/api/jadwal").send(schedule());
+    expect(res.status).toBe(201);
     expect(typeof res.body.id).toBe("number");
-    createdIds.push(res.body.id);
+    expect(res.body.mata_kuliah).toBe("Pemrograman Web");
+    jadwalId = res.body.id;
   });
 
-  it("accepts optional dosen_id as null without error", async () => {
+  it("the new schedule shows up on the room", async () => {
+    const res = await request(server).get(`/api/rooms/${TEST_ROOM}`);
+    expect(res.body.schedules.some((s) => s.id === jadwalId)).toBe(true);
+  });
+
+  it("PUT updates the schedule", async () => {
     const res = await request(server)
-      .post(`/api/rooms/${TEST_ROOM}/schedules`)
-      .send({
-        hari:        "Selasa",
-        jam_mulai:   "10:00",
-        jam_selesai: "12:00",
-        mata_kuliah: "Basis Data",
-        dosen_id:    null,
-        kode_kelas:  null,
-      });
+      .put(`/api/jadwal/${jadwalId}`)
+      .send(schedule({ hari: "Jumat", mata_kuliah: "Mata Kuliah Diperbarui" }));
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("id");
-    createdIds.push(res.body.id);
-  });
+    expect(res.body.hari).toBe("Jumat");
 
-  it("created schedule is visible via GET room endpoint", async () => {
-    const res = await request(server)
-      .post(`/api/rooms/${TEST_ROOM}/schedules`)
-      .send({
-        hari:        "Rabu",
-        jam_mulai:   "13:00",
-        jam_selesai: "15:00",
-        mata_kuliah: "Jaringan Komputer",
-        kode_kelas:  "B",
-      });
-    createdIds.push(res.body.id);
-
-    const roomRes = await request(server).get(`/api/rooms/${TEST_ROOM}`);
-    expect(roomRes.status).toBe(200);
-    const found = roomRes.body.schedules.some((s) => s.mata_kuliah === "Jaringan Komputer");
-    expect(found).toBe(true);
-  });
-});
-
-// ── PUT /api/schedules/:id ───────────────────────────────────────────
-
-describe("PUT /api/schedules/:id", () => {
-  const TEST_ROOM = "TEST_ROOM_JEST_BLACKBOX";
-  let scheduleId;
-
-  beforeAll(async () => {
-    const res = await request(server)
-      .post(`/api/rooms/${TEST_ROOM}/schedules`)
-      .send({
-        hari:        "Kamis",
-        jam_mulai:   "07:00",
-        jam_selesai: "09:00",
-        mata_kuliah: "Mata Kuliah Awal",
-        kode_kelas:  "C",
-      });
-    scheduleId = res.body.id;
-  });
-
-  afterAll(async () => {
-    if (scheduleId) await request(server).delete(`/api/schedules/${scheduleId}`);
-  });
-
-  it("updates a schedule and returns success message", async () => {
-    const res = await request(server)
-      .put(`/api/schedules/${scheduleId}`)
-      .send({
-        hari:        "Jumat",
-        jam_mulai:   "09:00",
-        jam_selesai: "11:00",
-        mata_kuliah: "Mata Kuliah Diperbarui",
-        dosen_id:    null,
-        kode_kelas:  "D",
-      });
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("message");
-  });
-
-  it("update is reflected when fetching the room", async () => {
-    const roomRes = await request(server).get(`/api/rooms/${TEST_ROOM}`);
-    const updated = roomRes.body.schedules.find((s) => s.id === scheduleId);
-    expect(updated).toBeDefined();
+    const room    = await request(server).get(`/api/rooms/${TEST_ROOM}`);
+    const updated = room.body.schedules.find((s) => s.id === jadwalId);
     expect(updated.mata_kuliah).toBe("Mata Kuliah Diperbarui");
-    expect(updated.hari).toBe("Jumat");
   });
 
-  it("updating a non-existent id returns 200 (no-op, no crash)", async () => {
-    // The API doesn't error on missing id — document this behaviour
-    const res = await request(server)
-      .put("/api/schedules/999999999")
-      .send({
-        hari: "Senin", jam_mulai: "08:00", jam_selesai: "10:00",
-        mata_kuliah: "X", dosen_id: null, kode_kelas: null,
-      });
+  it("PUT on a missing id returns 404", async () => {
+    const res = await request(server).put("/api/jadwal/999999999").send(schedule());
+    expect(res.status).toBe(404);
+  });
+
+  it("DELETE removes the schedule", async () => {
+    const res = await request(server).delete(`/api/jadwal/${jadwalId}`);
     expect(res.status).toBe(200);
+    expect(res.body).toEqual({ deleted: true });
+
+    const room = await request(server).get(`/api/rooms/${TEST_ROOM}`);
+    expect(room.body.schedules.some((s) => s.id === jadwalId)).toBe(false);
+  });
+
+  it("DELETE on a missing id returns 404", async () => {
+    const res = await request(server).delete("/api/jadwal/999999999");
+    expect(res.status).toBe(404);
   });
 });
 
-// ── DELETE /api/schedules/:id ────────────────────────────────────────
+// ── /api/reservasi conflict checks ───────────────────────────────────
 
-describe("DELETE /api/schedules/:id", () => {
-  const TEST_ROOM = "TEST_ROOM_JEST_BLACKBOX";
-  let scheduleId;
+describe("/api/reservasi conflict checks", () => {
+  const tanggal = nextMonday();
+
+  const booking = (jam_mulai, jam_selesai) => ({
+    ruangan_id: roomId, dosen_id: dosenId, tanggal, jam_mulai, jam_selesai,
+  });
 
   beforeAll(async () => {
-    const res = await request(server)
-      .post(`/api/rooms/${TEST_ROOM}/schedules`)
-      .send({
-        hari:        "Senin",
-        jam_mulai:   "14:00",
-        jam_selesai: "16:00",
-        mata_kuliah: "Mata Kuliah Hapus",
-        kode_kelas:  "E",
-      });
-    scheduleId = res.body.id;
+    // A Monday class from 08:00 to 10:00 in the test room.
+    await request(server).post("/api/jadwal").send({
+      ruangan_id: roomId, dosen_id: dosenId, hari: "Senin",
+      jam_mulai: "08:00", jam_selesai: "10:00", mata_kuliah: "Kelas Bentrok",
+    });
   });
 
-  it("deletes a schedule and returns success message", async () => {
-    const res = await request(server).delete(`/api/schedules/${scheduleId}`);
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("message");
-    scheduleId = null; // already deleted
+  it("rejects a booking that overlaps a class with 409", async () => {
+    const res = await request(server).post("/api/reservasi").send(booking("09:00", "11:00"));
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/jadwal kuliah/);
   });
 
-  it("deleted schedule is no longer in room schedules", async () => {
-    const roomRes = await request(server).get(`/api/rooms/${TEST_ROOM}`);
-    const stillThere = (roomRes.body.schedules || []).some((s) => s.mata_kuliah === "Mata Kuliah Hapus");
-    expect(stillThere).toBe(false);
+  it("accepts a booking that starts when the class ends", async () => {
+    const res = await request(server).post("/api/reservasi").send(booking("10:00", "11:00"));
+    expect(res.status).toBe(201);
   });
 
-  it("deleting a non-existent id returns 200 (no-op)", async () => {
-    const res = await request(server).delete("/api/schedules/999999999");
-    expect(res.status).toBe(200);
+  it("rejects a booking that overlaps another booking with 409", async () => {
+    const res = await request(server).post("/api/reservasi").send(booking("10:30", "12:00"));
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/reservasi lain/);
   });
 });
 
 // ── WebSocket ────────────────────────────────────────────────────────
 
-describe("WebSocket", () => {
+describe("WebSocket /ws", () => {
   beforeAll((done) => {
-    // ensure server is listening before WS tests
+    // Supertest binds an ephemeral port per request; WS tests need a stable one.
     if (!server.listening) server.listen(0, done);
     else done();
   });
 
   it("tv role receives a session message with sid and mobileUrl", async () => {
-    const { ws, firstMessage } = await connectWs("/?role=tv");
+    const { ws, firstMessage } = await connectWs("/ws?role=tv");
     const msg = await firstMessage;
     expect(msg.type).toBe("session");
     expect(typeof msg.sid).toBe("string");
     expect(msg.sid.length).toBeGreaterThan(0);
-    expect(typeof msg.mobileUrl).toBe("string");
     expect(msg.mobileUrl).toContain(msg.sid);
     ws.close();
   });
 
-  it("phone with invalid sid is rejected (close code 1008)", async () => {
-    const ws = new WebSocket(getWsUrl("/?role=phone&sid=INVALID-SID-THAT-DOES-NOT-EXIST"));
+  it.each([
+    ["phone with an unknown sid", "/ws?role=phone&sid=INVALID-SID-THAT-DOES-NOT-EXIST"],
+    ["phone with no sid",         "/ws?role=phone"],
+    ["an unknown role",           "/ws?role=unknown"],
+  ])("rejects %s with close code 1008", async (_label, path) => {
+    const ws = new WebSocket(getWsUrl(path));
     const { code } = await waitForClose(ws);
     expect(code).toBe(1008);
   });
 
-  it("phone with no sid is rejected (close code 1008)", async () => {
-    const ws = new WebSocket(getWsUrl("/?role=phone"));
-    const { code } = await waitForClose(ws);
-    expect(code).toBe(1008);
-  });
+  it("pairing notifies the tv on phone connect and disconnect", async () => {
+    const { ws: tvWs, firstMessage } = await connectWs("/ws?role=tv");
+    const { sid } = await firstMessage;
 
-  it("connection with unknown role is rejected (close code 1008)", async () => {
-    const ws = new WebSocket(getWsUrl("/?role=unknown"));
-    const { code } = await waitForClose(ws);
-    expect(code).toBe(1008);
-  });
+    const tvNext  = waitForMessage(tvWs);
+    const phoneWs = new WebSocket(getWsUrl(`/ws?role=phone&sid=${sid}`));
+    expect((await tvNext).type).toBe("phoneConnected");
 
-  it("phone connecting with valid tv sid triggers phoneConnected on tv", async () => {
-    // 1. connect tv
-    const { ws: tvWs, firstMessage: firstTvMsg } = await connectWs("/?role=tv");
-    const session = await firstTvMsg;
-    const sid     = session.sid;
-
-    // 2. connect phone using tv's sid
-    const phoneWs     = new WebSocket(getWsUrl(`/?role=phone&sid=${sid}`));
-    const phoneOpenP  = new Promise((res) => phoneWs.once("open", res));
-    const tvNextMsg   = waitForMessage(tvWs);
-    await phoneOpenP;
-
-    // 3. tv should receive phoneConnected
-    const connected = await tvNextMsg;
-    expect(connected.type).toBe("phoneConnected");
-
-    // 4. phone disconnect notifies tv
-    const tvDisconnectMsg = waitForMessage(tvWs);
+    const tvDisconnect = waitForMessage(tvWs);
     phoneWs.close();
-    const disconnected = await tvDisconnectMsg;
-    expect(disconnected.type).toBe("phoneDisconnected");
+    expect((await tvDisconnect).type).toBe("phoneDisconnected");
 
     tvWs.close();
   });
 
-  it("messages from phone are forwarded to tv", async () => {
-    const { ws: tvWs, firstMessage: firstTvMsg } = await connectWs("/?role=tv");
-    const { sid } = await firstTvMsg;
+  it("relays messages both ways", async () => {
+    const { ws: tvWs, firstMessage } = await connectWs("/ws?role=tv");
+    const { sid } = await firstMessage;
 
-    const phoneWs    = new WebSocket(getWsUrl(`/?role=phone&sid=${sid}`));
-    const phoneOpenP = new Promise((res) => phoneWs.once("open", res));
-    await phoneOpenP;
+    const phoneConnected = waitForMessage(tvWs);
+    const { ws: phoneWs } = await connectWs(`/ws?role=phone&sid=${sid}`);
+    await phoneConnected;
 
-    // drain phoneConnected from tv
-    await waitForMessage(tvWs);
+    const atTv = waitForMessage(tvWs);
+    phoneWs.send(JSON.stringify({ type: "cmd", action: "selectFloor", payload: "Lantai 2" }));
+    expect(await atTv).toEqual({ type: "cmd", action: "selectFloor", payload: "Lantai 2" });
 
-    const tvNextMsg = waitForMessage(tvWs);
-    phoneWs.send(JSON.stringify({ type: "gyroscope", x: 1, y: 2, z: 3 }));
+    const atPhone = waitForMessage(phoneWs);
+    tvWs.send(JSON.stringify({ type: "state", floor: "Lantai 2" }));
+    expect(await atPhone).toEqual({ type: "state", floor: "Lantai 2" });
 
-    const forwarded = await tvNextMsg;
-    expect(forwarded.type).toBe("gyroscope");
-    expect(forwarded.x).toBe(1);
+    phoneWs.close();
+    tvWs.close();
+  });
+
+  it("closes a second phone on the same session with code 1000", async () => {
+    const { ws: tvWs, firstMessage } = await connectWs("/ws?role=tv");
+    const { sid } = await firstMessage;
+
+    const phoneConnected = waitForMessage(tvWs);
+    const { ws: phoneWs } = await connectWs(`/ws?role=phone&sid=${sid}`);
+    await phoneConnected;
+
+    const second = new WebSocket(getWsUrl(`/ws?role=phone&sid=${sid}`));
+    const { code, reason } = await waitForClose(second);
+    expect(code).toBe(1000);
+    expect(reason).toBe("session already in use");
 
     phoneWs.close();
     tvWs.close();

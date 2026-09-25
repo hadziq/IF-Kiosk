@@ -2,8 +2,6 @@
 
 An interactive 3D digital directory kiosk for the Informatics building (Teknik Informatika / TC), built for touchscreen displays. Visitors explore an interactive 3D model of the building floor by floor, look up rooms, lecturers, and class schedules, and can take over navigation from their own phone by scanning a QR code.
 
-![Kiosk hero](frontend/src/assets/hero.png)
-
 ## Contents
 
 - [Features](#features)
@@ -14,6 +12,7 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 - [Environment variables](#environment-variables)
 - [REST API](#rest-api)
 - [WebSocket protocol](#websocket-protocol)
+- [Rooms and the 3D model](#rooms-and-the-3d-model)
 - [Lecturer photos](#lecturer-photos)
 - [Testing](#testing)
 - [Deploying to a kiosk](#deploying-to-a-kiosk)
@@ -99,8 +98,8 @@ IF-Kiosk/
 │       ├── models/    3D building/floor models (.obj/.mtl)
 │       └── picture/   Lecturer photos (WebP)
 └── database/
-    ├── schema.sql     Table definitions (ruangan, dosen, jadwal, reservasi, ...)
-    └── jadwal.sql     Seed data for class schedules
+    ├── schema.sql     Drops and recreates every table, then seeds rooms, lecturers and occupants
+    └── jadwal.sql     Seed data for class schedules (run after schema.sql)
 ```
 
 ## Getting started
@@ -126,7 +125,11 @@ psql -d ekiosk -f database/schema.sql
 psql -d ekiosk -f database/jadwal.sql
 ```
 
-`schema.sql` creates five tables: `ruangan` (rooms), `dosen` (lecturers), `penghuni_ruangan` (which lecturers sit in which room), `jadwal` (weekly class schedule), and `reservasi` (ad-hoc room bookings). `jadwal.sql` is optional seed data.
+`schema.sql` creates five tables: `ruangan` (rooms), `dosen` (lecturers), `penghuni_ruangan` (which lecturers sit in which room), `jadwal` (weekly class schedule), and `reservasi` (ad-hoc room bookings). It then seeds every room in the 3D model, the lecturers, and who sits where. `jadwal.sql` adds the semester's class schedule; it looks rooms and lecturers up by name, so it only works after `schema.sql`.
+
+> **`schema.sql` starts by dropping every table.** Running it again wipes all data, including anything entered through `/admin`. Use it to set up a fresh database, never against one that is in use.
+
+A fresh load should give 66 rooms, 55 lecturers, 52 occupant rows and 146 schedule rows. If a count comes up short, see [Seed data fails silently](#seed-data-fails-silently).
 
 ### 3. Configure environment variables
 
@@ -244,6 +247,72 @@ Anything else is closed with code **1008**. So is a phone presenting an unknown 
 
 A phone that sends nothing for **one minute** is disconnected (`PHONE_IDLE_MS` in `backend/ws/index.js`), which frees the session for the next visitor.
 
+## Rooms and the 3D model
+
+The room list on the kiosk does not come from the database. It comes from the **mesh names inside the 3D model**, and the database is then asked about each name. So a room shows up in two places that must agree:
+
+```mermaid
+flowchart LR
+    obj["Lantai 3.obj<br/>mesh named NETICS"] -->|"every mesh name,<br/>minus EXCLUDE"| list["Room buttons<br/>in the sidebar"]
+    list -->|"tap NETICS"| api["GET /api/rooms/NETICS"]
+    api --> row[("ruangan row<br/>nama_ruang = 'NETICS'")]
+```
+
+### The model files
+
+Each floor is a Wavefront pair in `frontend/public/models/`, loaded by name from the `FLOORS` list in `frontend/src/lib/constants.js`:
+
+| File | Shown when |
+|---|---|
+| `TC.obj` + `TC.mtl` | The whole-building overview, before a floor is chosen. |
+| `Lantai 1.obj` … `Lantai 4.obj` (+ `.mtl`) | A floor is selected. The file name is the floor name, space included. |
+
+When a floor loads, `useModelLoader` collects every named mesh. `Sidebar` then drops any name matching `EXCLUDE` (`pillar`, `box`, `TV`, `lantai`, `tangga`, `pintu`, `sebelah`, case-insensitive), and every remaining name becomes a room button. Tapping one highlights that mesh and fetches `GET /api/rooms/<mesh name>`.
+
+### The rules that tie a mesh to a database row
+
+- **`ruangan.nama_ruang` must equal the mesh name.** The match is case-sensitive: a mesh called `NETICS` will not find a row called `Netics`.
+- **Spaces and underscores are interchangeable.** OBJ exporters turn spaces into underscores, so the API matches `Aula_Handayani` to a row named `Aula Handayani`. Buttons display underscores as spaces.
+- **`ruangan.lantai` must be the floor's file name**, e.g. `Lantai 3`. Search results use it to decide which model to load before jumping to the room.
+- **A mesh with no matching row is not an error.** The panel shows the room name and nothing else. Toilets and the plaza are left like this on purpose. On a real room, it means the names do not match.
+
+What the panel shows is driven by the flags on the row, and they combine freely. `LP_2`, for example, is a lab and a classroom and a lecturer office at once:
+
+| Flag | Effect on the kiosk panel |
+|---|---|
+| `is_lab` | Header reads *Laboratorium*. |
+| `is_ruang_dosen` | Header reads *Ruang Dosen*; lists lecturers from `penghuni_ruangan`. |
+| `is_kelas` | Shows the weekly schedule from `jadwal`. |
+| `is_reservable` | Shows today's remaining bookings, and the room can be booked in `/admin`. |
+| `is_ruangan` | A labelled space. With none of the three flags above, the panel shows only the name and `keterangan`. |
+
+### Adding a room
+
+1. **Name the mesh** in your 3D tool, then export that floor over the existing `Lantai N.obj` and `.mtl`. Choose the name carefully, because it becomes the room's permanent key.
+2. **Add the `ruangan` row**, either through `/admin` (quickest) or in the seed section of `database/schema.sql` (so a fresh install has it too). Copy the mesh name exactly, and set `lantai` and the flags.
+3. **Attach what the flags promise:** occupants for `is_ruang_dosen`, classes for `is_kelas`. A lecturer's photo follows the rules in [Lecturer photos](#lecturer-photos).
+4. **Check it on the kiosk:** open the floor, tap the room and confirm the panel is filled, not just the bare name.
+
+Adding a whole floor also means adding its name to `FLOORS` in `frontend/src/lib/constants.js`. If its rooms need a particular order in the sidebar, add a sort to `getRoomSort` in the same file, like the one for `Lantai 3`.
+
+### Seed data fails silently
+
+The seed files never use numeric ids. They look rooms and lecturers up by name:
+
+```sql
+INSERT INTO penghuni_ruangan (ruangan_id, dosen_id, urutan)
+  SELECT r.id, d.id, 1 FROM ruangan r, dosen d
+  WHERE r.nama_ruang = 'NETICS' AND d.nama = 'Dr. Baskoro Adi P., S.Kom., M.Kom.';
+```
+
+If either name is misspelled, the `SELECT` matches nothing and the `INSERT` adds **zero rows without an error**. For a second or third lecturer in `jadwal.sql`, a misspelled name just stores `NULL`. After you edit a seed file, reload it into a scratch database and compare the row counts with the numbers under [Set up the database](#2-set-up-the-database). This query lists lecturer offices that ended up with nobody in them:
+
+```sql
+SELECT r.nama_ruang FROM ruangan r
+LEFT JOIN penghuni_ruangan pr ON pr.ruangan_id = r.id
+WHERE r.is_ruang_dosen AND pr.id IS NULL;
+```
+
 ## Lecturer photos
 
 Photos live in `frontend/public/picture/` and are looked up **by the lecturer's exact name** from the `dosen` table:
@@ -265,9 +334,19 @@ These were originally 1024×1024 PNGs averaging 1.1 MB each — 56 MB for 50 por
 npm --prefix backend run test
 ```
 
-`backend/tests/api.test.js` covers the REST endpoints and the WebSocket pairing flow with Jest and Supertest.
+`backend/tests/api.test.js` uses Jest and Supertest to cover:
+- room lookup and search;
+- the full `jadwal` create/update/delete cycle;
+- the booking conflict checks that return 409;
+- the WebSocket rules: pairing, relaying, the 1008 rejections, and the one-phone-per-session limit.
 
-**These tests need a running PostgreSQL.** They exercise real queries, and `backend/db.js` exits the process if it cannot connect — so a failure that looks like a crash on startup usually means the database is down or `backend/.env` is wrong, not that the code broke.
+**These tests need a running PostgreSQL, and they write to it.** They run against whatever database `backend/.env` points at. They create a room and a lecturer named `TEST_JEST_…`, and delete them again at the end. To keep them away from real data, point `DATABASE_URL` at a scratch database loaded from `database/`:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ekiosk_test npm --prefix backend run test
+```
+
+`backend/db.js` exits the process if it cannot connect. A failure that looks like a crash on startup usually means the database is down or the connection settings are wrong, not that the code broke.
 
 ## Deploying to a kiosk
 
