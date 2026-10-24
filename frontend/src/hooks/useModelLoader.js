@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OBJLoader }    from "three/examples/jsm/loaders/OBJLoader";
 import { MTLLoader }    from "three/examples/jsm/loaders/MTLLoader";
 import { C, getExt } from "../lib/constants";
+import { asset } from "../lib/config";
 import { applyDefaultCameraView, getMarkerDefaultCameraView } from "../lib/cameraView";
 
 export function useModelLoader({
@@ -275,12 +276,12 @@ export function useModelLoader({
     setActiveFloor(null); setActiveRoom(null); setRoomData(null);
     const ml = new MTLLoader();
     ml.load(
-      "/models/TC.mtl",
+      asset("models/TC.mtl"),
       (mats) => {
         mats.preload();
         const ol = new OBJLoader();
         ol.setMaterials(mats);
-        ol.load("/models/TC.obj", (obj) => finalizeModel(obj, false, preserveCamera), undefined, onErr);
+        ol.load(asset("models/TC.obj"), (obj) => finalizeModel(obj, false, preserveCamera), undefined, onErr);
       },
       undefined,
       onErr,
@@ -308,12 +309,12 @@ export function useModelLoader({
 
     const ml = new MTLLoader();
     ml.load(
-      `/models/${floorName}.mtl`,
+      asset(`models/${floorName}.mtl`),
       (mats) => {
         mats.preload();
         const ol = new OBJLoader();
         ol.setMaterials(mats);
-        ol.load(`/models/${floorName}.obj`, (obj) => {
+        ol.load(asset(`models/${floorName}.obj`), (obj) => {
           modelCacheRef.current.set(floorName, deepClone(obj));
           finalizeModel(obj, true, preserve, floorName);
         }, undefined, onErr);

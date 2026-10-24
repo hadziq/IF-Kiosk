@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { C, displayName, DAYS } from "../lib/constants";
+import { asset } from "../lib/config";
 
 const JS_DAY_TO_ID = ["", ...DAYS, ""];
 const trimSecs = (t) => t?.slice(0, 5) ?? t;
@@ -27,14 +28,10 @@ function getInitials(name = "") {
     .join("") || "?";
 }
 
-function dosenPhotoPath(name = "") {
-  return `/picture/${encodeURIComponent(name)}.webp`;
-}
-
-function DosenPhoto({ name }) {
+function DosenPhoto({ kode, name }) {
   const size = 150;
   const [failed, setFailed] = useState(false);
-  const src = dosenPhotoPath(name);
+  const src = asset(`picture/${encodeURIComponent(kode)}.webp`);
 
   if (!failed) {
     return (
@@ -120,7 +117,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
     </div>
   );
 
-  const { lantai, is_kelas, is_lab, is_ruang_dosen, is_ruangan, is_reservable, keterangan, occupants = [], reservations } = roomData;
+  const { lantai, is_kelas, is_lab, is_ruang_dosen, is_ruangan, keterangan, occupants = [] } = roomData;
 
   if (is_ruangan && !is_lab && !is_kelas && !is_ruang_dosen) return (
     <div style={panelStyle}>
@@ -157,15 +154,12 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
         <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", borderBottom: `1px solid ${C.border}` }}>
           {occupants.length === 0
             ? <p style={{ fontSize: "13px", color: C.muted, letterSpacing: "1px", margin: 0 }}>-</p>
-            : occupants.map((occupant, i) => {
-                const name = typeof occupant === "string" ? occupant : occupant.nama;
-                return (
-                  <div key={typeof occupant === "string" ? `${name}-${i}` : occupant.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.blue}`, borderRadius: "6px", padding: "14px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                    <DosenPhoto name={name} />
-                    <span style={{ fontSize: "13px", color: C.text, lineHeight: 1.35, textAlign: "center" }}>{name}</span>
-                  </div>
-                );
-              })
+            : occupants.map(({ kode, nama }) => (
+                <div key={kode} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.blue}`, borderRadius: "6px", padding: "14px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                  <DosenPhoto kode={kode} name={nama} />
+                  <span style={{ fontSize: "13px", color: C.text, lineHeight: 1.35, textAlign: "center" }}>{nama}</span>
+                </div>
+              ))
           }
         </div>
       )}
@@ -187,33 +181,7 @@ export function SchedulePanel({ roomName, roomData, loading, error }) {
         </>
       )}
 
-      {is_reservable && reservations?.length > 0 && (
-        <>
-          <div style={{ padding: "20px 16px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${C.green}`, background: `linear-gradient(90deg, ${C.green}0d 0%, transparent 100%)`, flexShrink: 0 }}>
-            <p style={{ fontSize: "12px", letterSpacing: "2px", color: C.green, marginBottom: "8px", textTransform: "uppercase", textShadow: `0 0 8px ${C.green}` }}>
-              Reservasi Hari Ini
-            </p>
-            {!topLabel && !is_kelas && (
-              <p style={{ fontSize: "22px", fontWeight: "700", color: C.text, margin: "0 0 6px", letterSpacing: "1px" }}>{displayName(roomName)}</p>
-            )}
-          </div>
-          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {reservations.map((rv) => (
-              <div key={rv.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.green}`, borderRadius: "6px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ background: `${C.green}26`, border: `1px solid ${C.green}66`, borderRadius: "4px", padding: "3px 9px", fontSize: "13px", color: "#d0dcff", fontWeight: "400", letterSpacing: "0.3px" }}>
-                    {trimSecs(rv.jam_mulai)} - {trimSecs(rv.jam_selesai)}
-                  </span>
-                </div>
-                <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: 0 }}>{rv.keterangan || rv.nama_dosen}</p>
-                {rv.keterangan && <p style={{ fontSize: "13px", color: C.text, margin: 0 }}>&gt; {rv.nama_dosen}</p>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {!is_kelas && !reservations?.length && <div style={{ flex: 1 }} />}
+      {!is_kelas && <div style={{ flex: 1 }} />}
     </div>
   );
 }

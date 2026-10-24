@@ -1,0 +1,80 @@
+nama_ruang,lantai,kelas,lab,ruang_dosen,ruangan,keterangan
+IF_101,Lantai 1,1,,,,
+IF_102,Lantai 1,1,,,,
+IF_103,Lantai 1,1,,,,
+IF_104,Lantai 1,1,,,,
+IF_105,Lantai 1,1,,,,
+IF_106,Lantai 1,1,,,,
+IF_107,Lantai 1,1,,,,
+IF_108,Lantai 1,1,,,,
+IF_109,Lantai 1,1,,,,
+IF_110,Lantai 1,1,,,,
+IF_111,Lantai 1,1,,,,
+IF_112,Lantai 1,1,,,,
+IF_113,Lantai 1,1,,,,
+Plaza Supeno,Lantai 1,,,,1,Plaza Supeno
+Toilet_Laki-laki_Utara_L1,Lantai 1,,,,1,Toilet Laki-laki Mahasiswa - Sisi Utara
+Toilet_Perempuan_Utara_L1,Lantai 1,,,,1,Toilet Perempuan Mahasiswa - Sisi Utara
+Toilet_Laki-laki_Selatan_L1,Lantai 1,,,,1,Toilet Laki-laki Mahasiswa - Sisi Selatan
+Toilet_Perempuan_Selatan_L1,Lantai 1,,,,1,Toilet Perempuan Mahasiswa - Sisi Selatan
+IF_201,Lantai 2,,,1,,
+IF_203,Lantai 2,,,1,,
+IF_204,Lantai 2,,,1,,
+IF_205,Lantai 2,,,1,,
+IF_206,Lantai 2,,,1,,
+IF_207,Lantai 2,,,1,,
+IF_208,Lantai 2,,,1,,
+IF_209,Lantai 2,,,1,,
+IF_210,Lantai 2,,,1,,
+IF_211,Lantai 2,,,1,,
+IF_212,Lantai 2,,,1,,
+IF_213,Lantai 2,,,1,,
+IF_214,Lantai 2,,,1,,
+IF_215,Lantai 2,,,1,,
+IF_216,Lantai 2,,,1,,
+IF_218,Lantai 2,,,1,,
+IF_223,Lantai 2,,,1,,
+IF_224,Lantai 2,,,1,,
+IF_225,Lantai 2,,,1,,
+IF_226,Lantai 2,,,1,,
+IF_227,Lantai 2,,,1,,
+IF_228,Lantai 2,,,1,,
+IF_229,Lantai 2,,,1,,
+IF_230,Lantai 2,,,1,,
+IF_231,Lantai 2,,,1,,
+IF_232,Lantai 2,,,1,,
+IF_233,Lantai 2,,,1,,
+IF_234,Lantai 2,,,1,,
+IF_235,Lantai 2,,,1,,
+IF_202,Lantai 2,,,,1,Mushola
+IF_217A,Lantai 2,,,,1,Ruang Rapat
+IF_217B,Lantai 2,,,,1,Ruang Rapat
+IF_237,Lantai 2,,,,1,Mushola
+IF_222,Lantai 2,,,1,1,Alumni Corner
+Lounge,Lantai 2,,,,1,Lounge
+Ruang Sidang,Lantai 2,,,,1,Ruang Sidang
+Tata Usaha,Lantai 2,,,,1,Tata Usaha
+Aula Handayani,Lantai 2,1,,,,
+Toilet_Laki-laki_Utara_L2,Lantai 2,,,,1,Toilet Laki-laki Dosen - Sisi Utara
+Toilet_Perempuan_Utara_L2,Lantai 2,,,,1,Toilet Perempuan Dosen - Sisi Utara
+Toilet_Laki-laki_Selatan_L2,Lantai 2,,,,1,Toilet Laki-laki Dosen - Sisi Selatan
+Toilet_Perempuan_Selatan_L2,Lantai 2,,,,1,Toilet Perempuan Dosen - Sisi Selatan
+RPL,Lantai 3,,1,,,Rekayasa Perangkat Lunak
+KCV,Lantai 3,,1,,,Komputasi Cerdas Visi
+MCI,Lantai 3,,1,,,Manajemen Cerdas Informasi
+PKT,Lantai 3,,1,,,Pemodelan dan Komputasi Terapan
+GIGa,Lantai 3,,1,,,"Grafika, Interaksi dan Game"
+Lab_Pascasarjana,Lantai 3,,1,,,Laboratorium Pascasarjana
+KBJ,Lantai 3,,1,1,,Komputasi Berbasis Jaringan
+ALPRO,Lantai 3,,1,1,,Algoritma Pemrograman
+LP_1,Lantai 3,1,1,,,Lab Pemrograman 1
+LP_2,Lantai 3,1,1,1,,Lab Pemrograman 2
+NETICS,Lantai 3,1,1,1,,Teknologi Jaringan dan Keamanan Siber Cerdas
+Sekretariat HMTC,Lantai 3,,,,1,Sekretariat HMTC
+Co Working Space IUP,Lantai 3,,,,1,Co-Working Space IUP
+Toilet_Laki-laki_Utara_L3,Lantai 3,,,,1,Toilet Laki-laki Mahasiswa - Sisi Utara
+Toilet_Perempuan_Utara_L3,Lantai 3,,,,1,Toilet Perempuan Mahasiswa - Sisi Utara
+Toilet_Laki-laki_Selatan_L3,Lantai 3,,,,1,Toilet Laki-laki Mahasiswa - Sisi Selatan
+Toilet_Perempuan_Selatan_L3,Lantai 3,,,,1,Toilet Perempuan Mahasiswa - Sisi Selatan
+SPMB Jatim,Lantai 4,,,,1,SPMB Jatim
+SPMB Surabaya,Lantai 4,,,,1,SPMB Surabaya
