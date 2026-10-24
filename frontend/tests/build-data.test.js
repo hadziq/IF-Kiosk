@@ -17,7 +17,7 @@ const tables = (overrides = {}) => ({
 
 test("parseCsv handles quotes, a BOM, CRLF and Excel's semicolon separator", () => {
   const rows = parseCsv('﻿kode;nama\r\nHF;"Fabroyir; ""Hadziq"""\r\n\r\n');
-  assert.deepEqual(rows, [{ line: 2, row: { kode: "HF", nama: 'Fabroyir; "Hadziq"' } }]);
+  assert.deepEqual(rows, [{ line: 2, row: { kode: "HF", nama: 'Fabroyir; "Hadziq"' }, extra: 0 }]);
 });
 
 test("parseCsv reports the line of each record, counting quoted line breaks", () => {
@@ -56,6 +56,31 @@ test("buildData rejects a room with no mesh of that name in its floor model", ()
 
   const { errors } = buildData(tables(), { meshNames: { ...meshNames, "Lantai 1": new Set(["IF_102"]) } });
   assert.match(errors[0], /^ruangan\.csv:2: tidak ada mesh bernama IF_101 di model Lantai 1\.obj/);
+});
+
+test("buildData rejects a row with more fields than the header, as an unquoted comma produces", () => {
+  const { errors } = buildData(tables({ dosen: parseCsv("kode,nama\nHF,Hadziq Fabroyir, S.Kom., Ph.D.\nRJ,Rizky\n") }));
+  assert.deepEqual(errors, [
+    "dosen.csv:2: ada 2 kolom lebih banyak dari judul kolom; nilai yang mengandung koma harus diapit tanda kutip",
+  ]);
+});
+
+test("buildData rejects a missing floor model", () => {
+  const meshNames = { "Lantai 1": null, "Lantai 2": new Set(["IF_233"]) };
+  assert.deepEqual(buildData(tables(), { meshNames }).errors, [
+    "model Lantai 1.obj tidak ditemukan di public/models; kiosk tidak bisa memuat lantai ini",
+  ]);
+});
+
+test("buildData reports every class that overlaps a long one, not only its neighbour", () => {
+  const { warnings } = buildData(tables({
+    jadwal: parseCsv("hari,jam_mulai,jam_selesai,nama_ruang,mata_kuliah,dosen_1,dosen_2,dosen_3\n" +
+      "Senin,07:00,12:00,IF_101,A,HF,,\nSenin,08:00,09:00,IF_101,B,HF,,\nSenin,10:00,11:00,IF_101,C,HF,,\nSenin,12:00,13:00,IF_101,D,HF,,\n"),
+  }), { photos: new Set(["HF", "RJ"]) });
+  assert.deepEqual(warnings.map((w) => w.replace(/ di IF_101.*/, "")), [
+    "jadwal.csv:3: B bentrok dengan A (baris 2)",
+    "jadwal.csv:4: C bentrok dengan A (baris 2)",
+  ]);
 });
 
 test("buildData warns about overlapping classes and missing photos", () => {

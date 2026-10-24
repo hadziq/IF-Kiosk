@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { C, EXCLUDE, getRoomSort, groupMeshNames } from "../lib/constants";
 import { loadData }     from "../lib/data";
 import { getRoom }      from "../lib/directory";
+import { RELAY_URL }    from "../lib/config";
 import { useThreeScene }  from "../hooks/useThreeScene";
 import { useAnimations }  from "../hooks/useAnimations";
 import { useModelLoader } from "../hooks/useModelLoader";
@@ -225,12 +226,13 @@ export default function Kiosk() {
   // visitor is using it from their phone.
   useEffect(() => {
     if (phoneConnected) return;
+    let idle = true;
     const id = setInterval(() => {
       Promise.all([loadData(), loadData({ fresh: true })])
-        .then(([loaded, latest]) => { if (loaded.version !== latest.version) window.location.reload(); })
+        .then(([loaded, latest]) => { if (idle && loaded.version !== latest.version) window.location.reload(); })
         .catch(() => {});
     }, DATA_CHECK_MS);
-    return () => clearInterval(id);
+    return () => { idle = false; clearInterval(id); };
   }, [phoneConnected]);
 
   // ── Load the same kiosk view used after phone disconnect on mount ──
@@ -286,7 +288,9 @@ export default function Kiosk() {
         )}
       </div>
 
-      {phoneConnected && (
+      {/* The panel belongs to the paired phone. With no relay nobody can pair,
+          so show it whenever a room is tapped on the screen itself. */}
+      {(phoneConnected || !RELAY_URL) && (
         <div style={{ width: "300px", minWidth: "300px", height: "100%", flexShrink: 0 }}>
           <SchedulePanel
             roomName={activeRoom}

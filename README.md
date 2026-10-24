@@ -54,7 +54,7 @@ The kiosk opens a WebSocket as `role=tv`, receives a session id, and renders a Q
 
 <img src="docs/screenshots/phone.webp" alt="The /mobile page on a phone: search, the room list for the current floor, and a touch pad that rotates, pans and zooms the kiosk's camera" width="260" align="right">
 
-The phone gets search, the room list of whichever floor the kiosk shows, and a touch pad for the kiosk's camera. The room panel on the kiosk (the right-hand column in the screenshot above) only appears while a phone is paired.
+The phone gets search, the room list of whichever floor the kiosk shows, and a touch pad for the kiosk's camera. The room panel on the kiosk (the right-hand column in the screenshot above) only appears while a phone is paired. When pairing is off (`VITE_RELAY_URL=none`), it appears for rooms tapped on the kiosk screen instead.
 
 <br clear="right">
 
@@ -307,7 +307,7 @@ Point the kiosk browser at the site in fullscreen/kiosk mode.
 
 ## Known limitations
 
-- **Phone pairing on the public site waits on the hosted relay.** Until `RELAY_URL` is set, GitHub Pages serves the kiosk without a QR code.
+- **Phone pairing on the public site waits on the hosted relay.** Until `RELAY_URL` is set, GitHub Pages serves the kiosk without a QR code, and visitors use the touchscreen.
 - **Sessions on the local relay are held in memory.** Restarting it drops every active pairing.
 - **The frontend ships as one bundle** of roughly 850 KB (230 KB gzipped), dominated by Three.js. Fine for a kiosk on a wired connection; worth code-splitting if the phone page is often loaded over mobile data.
 - **`lint` reports pre-existing warnings** about refs being accessed during render in `useWebSocket.js` and elsewhere. They are long-standing and unrelated to the current structure.

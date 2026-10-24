@@ -30,8 +30,9 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
  * CRLF line endings, and `;` instead of `,` as the separator (detected from
  * the header row).
  *
- * Returns an array of { line, row } where row maps header → trimmed value and
- * line is the 1-based line number in the file, for error messages.
+ * Returns an array of { line, row, extra } where row maps header → trimmed
+ * value, line is the 1-based line number in the file, for error messages, and
+ * extra counts non-empty cells beyond the header, which row cannot hold.
  */
 export function parseCsv(text) {
   text = text.replace(/^\uFEFF/, "");
@@ -61,7 +62,8 @@ export function parseCsv(text) {
   const keys = header.cells.map((k) => k.trim());
   return rows.map(({ line, cells }) => ({
     line,
-    row: Object.fromEntries(keys.map((k, i) => [k, (cells[i] ?? "").trim()])),
+    row:   Object.fromEntries(keys.map((k, i) => [k, (cells[i] ?? "").trim()])),
+    extra: cells.slice(keys.length).filter((c) => c.trim() !== "").length,
   }));
 }
 
@@ -72,12 +74,12 @@ const meshKey = (name) => name.replace(/ /g, "_");
 const TRUE_VALUES  = new Set(["1", "true", "ya", "y", "x", "v"]);
 const FALSE_VALUES = new Set(["", "0", "false", "tidak", "n"]);
 
-/** Mesh names of every floor model, keyed by floor name. */
+/** Mesh names of every floor model, keyed by floor name; null for a missing model. */
 export function readMeshNames(modelsDir) {
   const result = {};
   for (const floor of FLOORS) {
     const file = join(modelsDir, `${floor}.obj`);
-    if (!existsSync(file)) continue;
+    if (!existsSync(file)) { result[floor] = null; continue; }
     const names = new Set();
     for (const m of readFileSync(file, "utf8").matchAll(/^o (.+)$/gm)) names.add(m[1].trim());
     result[floor] = names;
@@ -97,6 +99,15 @@ export function buildData(tables, { meshNames = null, photos = null } = {}) {
   const errors = [], warnings = [];
   const err  = (file, line, msg) => errors.push(`${file}.csv:${line}: ${msg}`);
   const warn = (file, line, msg) => warnings.push(`${file}.csv${line ? `:${line}` : ""}: ${msg}`);
+
+  for (const [file, rows] of Object.entries(tables)) {
+    for (const { line, extra } of rows) {
+      if (extra) err(file, line, `ada ${extra} kolom lebih banyak dari judul kolom; nilai yang mengandung koma harus diapit tanda kutip`);
+    }
+  }
+  for (const [floor, names] of Object.entries(meshNames ?? {})) {
+    if (names === null) errors.push(`model ${floor}.obj tidak ditemukan di public/models; kiosk tidak bisa memuat lantai ini`);
+  }
 
   const flag = (file, line, column, value) => {
     const v = value.toLowerCase();
@@ -141,7 +152,7 @@ export function buildData(tables, { meshNames = null, photos = null } = {}) {
 
   if (meshNames) {
     for (const [floor, names] of Object.entries(meshNames)) {
-      for (const mesh of names) {
+      for (const mesh of names ?? []) {
         if (!EXCLUDE.test(mesh) && !roomByKey.has(mesh)) {
           warnings.push(`model ${floor}.obj: mesh ${mesh} muncul sebagai tombol ruangan tetapi tidak ada di ruangan.csv`);
         }
@@ -200,10 +211,14 @@ export function buildData(tables, { meshNames = null, photos = null } = {}) {
     DAYS.indexOf(a.hari) - DAYS.indexOf(b.hari) ||
     a.nama_ruang.localeCompare(b.nama_ruang) ||
     a.jam_mulai.localeCompare(b.jam_mulai));
-  for (let i = 1; i < jadwal.length; i++) {
-    const prev = jadwal[i - 1], cur = jadwal[i];
-    if (prev.hari === cur.hari && prev.nama_ruang === cur.nama_ruang && cur.jam_mulai < prev.jam_selesai) {
-      warn("jadwal", cur.line, `${cur.mata_kuliah} bentrok dengan ${prev.mata_kuliah} (baris ${prev.line}) di ${cur.nama_ruang} hari ${cur.hari}`);
+  // Sorted by start, so every class that overlaps a[i] and starts later
+  // follows it directly. A long class can overlap several of those.
+  for (let i = 0; i < jadwal.length; i++) {
+    const a = jadwal[i];
+    for (let j = i + 1; j < jadwal.length; j++) {
+      const b = jadwal[j];
+      if (b.hari !== a.hari || b.nama_ruang !== a.nama_ruang || b.jam_mulai >= a.jam_selesai) break;
+      warn("jadwal", b.line, `${b.mata_kuliah} bentrok dengan ${a.mata_kuliah} (baris ${a.line}) di ${b.nama_ruang} hari ${b.hari}`);
     }
   }
 
