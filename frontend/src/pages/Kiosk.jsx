@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-import { API_URL, C, EXCLUDE, getRoomSort, groupMeshNames } from "../lib/constants";
+import { C, EXCLUDE, getRoomSort, groupMeshNames } from "../lib/constants";
+import { loadData }     from "../lib/data";
+import { getRoom }      from "../lib/directory";
+import { RELAY_URL }    from "../lib/config";
 import { useThreeScene }  from "../hooks/useThreeScene";
 import { useAnimations }  from "../hooks/useAnimations";
 import { useModelLoader } from "../hooks/useModelLoader";
@@ -9,6 +12,9 @@ import { Sidebar }        from "../components/Sidebar";
 import { SchedulePanel }  from "../components/SchedulePanel";
 import { useTVWebSocket } from "../hooks/useWebSocket";
 import { QROverlay }      from "../components/QROverlay";
+
+// How often the kiosk checks whether a new data version has been deployed.
+const DATA_CHECK_MS = 10 * 60 * 1000;
 
 export default function Kiosk() {
   const mountRef           = useRef(null);
@@ -203,24 +209,31 @@ export default function Kiosk() {
 
   useEffect(() => { sendStateRef.current(); }, [view, activeFloor, modelInfo]);
 
-  // ── Room data fetch (single call: flags + occupants + schedules) ──
-  const fetchRoomData = (room, showLoading) => {
-    if (!room) { setRoomData(null); setSchedLoading(false); setSchedError(""); return; }
-    if (showLoading) { setRoomData(null); setSchedLoading(true); setSchedError(""); }
-    fetch(`${API_URL}/api/rooms/${encodeURIComponent(room)}`)
-      .then((r) => r.ok ? r.json() : null)
-      .catch(() => null)
-      .then((data) => { setRoomData(data); setSchedLoading(false); });
-  };
-
-  useEffect(() => { fetchRoomData(activeRoom, true); }, [activeRoom]);
-
-  // Auto-refresh room data every 30s so admin changes appear on the kiosk
+  // ── Room data (flags + occupants + schedules) from the static data ──
   useEffect(() => {
-    if (!activeRoom) return;
-    const id = setInterval(() => fetchRoomData(activeRoom, false), 30000);
-    return () => clearInterval(id);
+    if (!activeRoom) { setRoomData(null); setSchedLoading(false); setSchedError(""); return; }
+    let current = true;
+    setRoomData(null); setSchedLoading(true); setSchedError("");
+    loadData()
+      .then((data) => { if (current) setRoomData(getRoom(data, activeRoom)); })
+      .catch(() => { if (current) setSchedError("Data ruangan tidak dapat dimuat."); })
+      .finally(() => { if (current) setSchedLoading(false); });
+    return () => { current = false; };
   }, [activeRoom]);
+
+  // A kiosk stays open for weeks. When a new data version has been deployed,
+  // reload the page so it picks up the new data and code, but never while a
+  // visitor is using it from their phone.
+  useEffect(() => {
+    if (phoneConnected) return;
+    let idle = true;
+    const id = setInterval(() => {
+      Promise.all([loadData(), loadData({ fresh: true })])
+        .then(([loaded, latest]) => { if (idle && loaded.version !== latest.version) window.location.reload(); })
+        .catch(() => {});
+    }, DATA_CHECK_MS);
+    return () => { idle = false; clearInterval(id); };
+  }, [phoneConnected]);
 
   // ── Load the same kiosk view used after phone disconnect on mount ──
   useEffect(() => { resetToDisconnectedView(); }, []);
@@ -275,7 +288,9 @@ export default function Kiosk() {
         )}
       </div>
 
-      {phoneConnected && (
+      {/* The panel belongs to the paired phone. With no relay nobody can pair,
+          so show it whenever a room is tapped on the screen itself. */}
+      {(phoneConnected || !RELAY_URL) && (
         <div style={{ width: "300px", minWidth: "300px", height: "100%", flexShrink: 0 }}>
           <SchedulePanel
             roomName={activeRoom}

@@ -3,12 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import Kiosk from './pages/Kiosk.jsx'
 import MobileControl from './pages/MobileControl.jsx'
-import Admin from './pages/Admin.jsx'
+import { BASE } from './lib/config'
 
-const path = window.location.pathname
+// "/IF-Kiosk/mobile/" → "mobile". The trailing slash is optional, because
+// GitHub Pages serves the phone page from mobile/index.html.
+const page = window.location.pathname.slice(BASE.length).replace(/\/+$/, '')
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {path === '/mobile' ? <MobileControl /> : path === '/admin' ? <Admin /> : <Kiosk />}
+    {page === 'mobile' ? <MobileControl /> : <Kiosk />}
   </StrictMode>,
 )

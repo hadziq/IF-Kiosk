@@ -1,9 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-
-const WS_URL = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`;
+import { BASE, RELAY_URL } from "../lib/config";
 
 /**
- * Connects the TV browser to the backend WebSocket relay.
+ * Origin the phone should load the app from. Normally the kiosk's own. When
+ * the kiosk is opened as localhost, a phone cannot reach that, so use the LAN
+ * address a local relay reports, or the public URL it was configured with.
+ */
+function phoneOrigin({ mobileOrigin, lanAddress }) {
+  if (mobileOrigin) return mobileOrigin.replace(/\/+$/, "");
+  const { protocol, hostname, port, origin } = window.location;
+  if (lanAddress && /^(localhost|127\.|\[::1\]$)/.test(hostname)) {
+    return `${protocol}//${lanAddress}${port ? `:${port}` : ""}`;
+  }
+  return origin;
+}
+
+/** The URL in the QR code. The phone loads the same build, so it knows the relay already. */
+const buildMobileUrl = (msg) => `${phoneOrigin(msg)}${BASE}mobile/?sid=${encodeURIComponent(msg.sid)}`;
+
+/**
+ * Connects the TV browser to the WebSocket relay. With no relay configured
+ * (RELAY_URL is null) it does nothing, and mobileUrl stays empty so no QR
+ * code is shown.
  *
  * @param {object} callbacks
  * @param {(action, payload) => void} callbacks.onCmd         - called when phone sends a command
@@ -36,10 +54,11 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
   };
 
   useEffect(() => {
+    if (!RELAY_URL) return;
     let active = true;
 
     function connect() {
-      const ws = new WebSocket(`${WS_URL}/ws?role=tv`);
+      const ws = new WebSocket(`${RELAY_URL}/ws?role=tv`);
 
       ws.onopen = () => {
         if (!active) { ws.close(); return; }
@@ -51,7 +70,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
         const msg = JSON.parse(e.data);
 
         if (msg.type === "session") {
-          setMobileUrl(msg.mobileUrl);
+          setMobileUrl(buildMobileUrl(msg));
         }
         if (msg.type === "phoneConnected") {
           setPhoneConnected(true);

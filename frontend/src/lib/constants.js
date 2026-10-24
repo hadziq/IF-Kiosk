@@ -1,5 +1,3 @@
-export const API_URL = import.meta.env.DEV ? "http://localhost:8000" : window.location.origin;
-
 export const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export const FLOORS = ["Lantai 1", "Lantai 2", "Lantai 3", "Lantai 4"];

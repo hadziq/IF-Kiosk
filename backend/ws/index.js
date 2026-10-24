@@ -8,11 +8,14 @@ const PHONE_IDLE_MS = 1 * 60 * 1000;
 /**
  * Pairs a kiosk screen ("tv") with a phone that drives it.
  *
- * The TV connects first and is handed a fresh session id plus the URL to put
- * in its QR code. The phone connects with that sid; from then on every message
- * is relayed verbatim between the two sockets.
+ * The TV connects first and is handed a fresh session id, from which it builds
+ * the URL in its QR code. The phone connects with that sid; from then on every
+ * message is relayed verbatim between the two sockets.
+ *
+ * This is the local relay, for development and for a kiosk on a LAN. The
+ * hosted kiosk will use a relay with the same protocol on Cloudflare.
  */
-function attachWebSocketServer(server, port) {
+function attachWebSocketServer(server) {
   const wss      = new WebSocketServer({ server, path: "/ws" });
   const sessions = new Map();
 
@@ -25,14 +28,14 @@ function attachWebSocketServer(server, port) {
       const newSid = randomUUID();
       sessions.set(newSid, { tv: ws, phone: null });
 
-      const localIP      = getLocalIP();
-      const frontendPort = process.env.FRONTEND_PORT || 5173;
-      const backendUrl   = process.env.PUBLIC_BACKEND_URL  || `http://${localIP}:${port}`;
-      const frontendUrl  = process.env.PUBLIC_FRONTEND_URL || `http://${localIP}:${frontendPort}`;
+      // Both hints are only for a kiosk opened as localhost, whose own origin a
+      // phone cannot reach; the kiosk ignores lanAddress otherwise.
       ws.send(JSON.stringify({
-        type:      "session",
-        sid:       newSid,
-        mobileUrl: `${frontendUrl}/mobile?sid=${newSid}&backendUrl=${encodeURIComponent(backendUrl)}`,
+        type: "session",
+        sid:  newSid,
+        ...(process.env.PUBLIC_FRONTEND_URL
+          ? { mobileOrigin: process.env.PUBLIC_FRONTEND_URL }
+          : { lanAddress: getLocalIP() }),
       }));
 
       ws.on("message", (data) => {

@@ -4,9 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "data": "node scripts/build-data.js",
+    "data:check": "node scripts/build-data.js --check",
+    "predev": "node scripts/build-data.js",
     "dev": "vite",
+    "prebuild": "node scripts/build-data.js",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test",
     "preview": "vite preview"
   },
   "dependencies": {

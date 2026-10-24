@@ -10,6 +10,9 @@ node_modules/
 frontend/dist/
 frontend/dist-ssr/
 
+# Generated from data/*.csv by frontend/scripts/build-data.js
+frontend/public/data/
+
 # Logs
 *.log
 npm-debug.log*

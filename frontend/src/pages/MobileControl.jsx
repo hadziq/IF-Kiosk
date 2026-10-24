@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Search, X, LoaderCircle, CheckCircle, ChevronRight } from "lucide-react";
 import { C, DAYS, FLOORS, EXCLUDE, displayName } from "../lib/constants";
+import { RELAY_URL } from "../lib/config";
+import { loadData } from "../lib/data";
+import { search } from "../lib/directory";
 
 const JS_DAY_TO_ID = ["", ...DAYS, ""];
 const TODAY = JS_DAY_TO_ID[new Date().getDay()] || null;
@@ -123,14 +126,6 @@ export default function MobileControl() {
   const params = new URLSearchParams(window.location.search);
   const sid = params.get("sid");
 
-  // Support new backendUrl param (works cross-network) and legacy host+port (same WiFi)
-  const backendUrl = params.get("backendUrl")
-    ? decodeURIComponent(params.get("backendUrl"))
-    : params.get("host") && params.get("port")
-      ? `http://${params.get("host")}:${params.get("port")}`
-      : window.location.origin;
-  const backendWsUrl = backendUrl.replace(/^http/, "ws");
-
   const wsRef          = useRef(null);
   const searchTimerRef = useRef(null);
   const activeRoomRef  = useRef(null);
@@ -144,13 +139,11 @@ export default function MobileControl() {
   const [selectedRoom,  setSelectedRoom]  = useState(null);
   const [awaitingRooms, setAwaitingRooms] = useState(false);
 
-  const apiBase = backendUrl;
-
   const disconnect = () => wsRef.current?.close();
 
   useEffect(() => {
-    if (!sid) return;
-    const ws = new WebSocket(`${backendWsUrl}/ws?role=phone&sid=${sid}`);
+    if (!sid || !RELAY_URL) return;
+    const ws = new WebSocket(`${RELAY_URL}/ws?role=phone&sid=${encodeURIComponent(sid)}`);
     wsRef.current = ws;
     ws.onopen    = () => setConnected(true);
     ws.onclose   = () => setConnected(false);
@@ -171,18 +164,20 @@ export default function MobileControl() {
     activeRoomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedRoom, tvView, awaitingRooms]);
 
-  // Debounced search — fires 350 ms after the user stops typing
+  // Fetch the data while the visitor is still reading the screen, so the
+  // first search does not wait on the network.
+  useEffect(() => { loadData().catch(() => {}); }, []);
+
+  // Debounced search — fires 200 ms after the user stops typing
   useEffect(() => {
     clearTimeout(searchTimerRef.current);
     if (query.trim().length < 2) { setSearchResults([]); return; }
     setSearchLoading(true);
     searchTimerRef.current = setTimeout(() => {
-      const dayParam = TODAY ? `&day=${encodeURIComponent(TODAY)}` : "";
-      fetch(`${apiBase}/api/search?q=${encodeURIComponent(query.trim())}${dayParam}`)
-        .then((r) => r.json())
-        .then((data) => { setSearchResults(Array.isArray(data) ? data : []); setSearchLoading(false); })
+      loadData()
+        .then((data) => { setSearchResults(search(data, query, TODAY)); setSearchLoading(false); })
         .catch(() => { setSearchResults([]); setSearchLoading(false); });
-    }, 350);
+    }, 200);
     return () => clearTimeout(searchTimerRef.current);
   }, [query]);
 
@@ -312,8 +307,7 @@ export default function MobileControl() {
               const floor = item.lantai ?? null;
               const isDosen = item.result_type === "dosen";
               const isRoom  = item.result_type === "room";
-              const isReservasi = item.result_type === "reservasi";
-              const accentColor = isReservasi ? C.blue : isDosen ? C.cyan : C.blue;
+              const accentColor = isDosen ? C.cyan : C.blue;
               return (
                 <button
                   key={i}
@@ -344,19 +338,7 @@ export default function MobileControl() {
                     )}
                   </div>
 
-                  {isReservasi ? (
-                    <>
-                      <span style={{ fontSize: "13px", color: C.text, letterSpacing: "0.3px" }}>{item.keterangan || "Reservasi"}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        {item.nama_dosen && (
-                          <span style={{ fontSize: "11px", color: C.text, display: "inline-flex", alignItems: "center", gap: "2px" }}><ChevronRight size={12} /> {item.nama_dosen}</span>
-                        )}
-                        <span style={{ fontSize: "10px", color: C.muted, marginLeft: "auto" }}>
-                          {item.jam_mulai?.slice(0, 5)}–{item.jam_selesai?.slice(0, 5)}
-                        </span>
-                      </div>
-                    </>
-                  ) : isRoom ? null : isDosen ? (
+                  {isRoom ? null : isDosen ? (
                     item.occupants?.length > 0 ? (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         {item.occupants.map((name, j) => (
