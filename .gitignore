@@ -13,6 +13,9 @@ frontend/dist-ssr/
 # Generated from data/*.csv by frontend/scripts/build-data.js
 frontend/public/data/
 
+# Local state of wrangler dev
+.wrangler/
+
 # Logs
 *.log
 npm-debug.log*

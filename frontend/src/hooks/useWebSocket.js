@@ -15,6 +15,9 @@ function phoneOrigin({ mobileOrigin, lanAddress }) {
   return origin;
 }
 
+// How often the kiosk pings the relay while waiting for a phone.
+const PING_MS = 30 * 1000;
+
 /** The URL in the QR code. The phone loads the same build, so it knows the relay already. */
 const buildMobileUrl = (msg) => `${phoneOrigin(msg)}${BASE}mobile/?sid=${encodeURIComponent(msg.sid)}`;
 
@@ -56,6 +59,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
   useEffect(() => {
     if (!RELAY_URL) return;
     let active = true;
+    let pingTimer = null;
 
     function connect() {
       const ws = new WebSocket(`${RELAY_URL}/ws?role=tv`);
@@ -63,10 +67,13 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
       ws.onopen = () => {
         if (!active) { ws.close(); return; }
         wsRef.current = ws;
+        // A kiosk can sit for hours with no phone. Keep the connection from
+        // being dropped as idle; the relay answers "pong" without waking up.
+        pingTimer = setInterval(() => ws.send("ping"), PING_MS);
       };
 
       ws.onmessage = (e) => {
-        if (!active) return;
+        if (!active || e.data === "pong") return;
         const msg = JSON.parse(e.data);
 
         if (msg.type === "session") {
@@ -87,6 +94,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
       };
 
       ws.onclose = () => {
+        clearInterval(pingTimer);
         if (!active) return;
         wsRef.current = null;
         // Keep mobileUrl so QR stays visible; only reset connected status
@@ -100,6 +108,7 @@ export function useTVWebSocket({ onCmd, onPhoneConnect, onPhoneDisconnect }) {
 
     return () => {
       active = false;
+      clearInterval(pingTimer);
       clearTimeout(retryRef.current);
       const ws = wsRef.current;
       wsRef.current = null;

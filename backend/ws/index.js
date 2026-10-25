@@ -13,7 +13,7 @@ const PHONE_IDLE_MS = 1 * 60 * 1000;
  * message is relayed verbatim between the two sockets.
  *
  * This is the local relay, for development and for a kiosk on a LAN. The
- * hosted kiosk will use a relay with the same protocol on Cloudflare.
+ * hosted kiosk uses relay/, a Cloudflare Worker with the same protocol.
  */
 function attachWebSocketServer(server) {
   const wss      = new WebSocketServer({ server, path: "/ws" });
@@ -39,11 +39,17 @@ function attachWebSocketServer(server) {
       }));
 
       ws.on("message", (data) => {
+        // The kiosk pings to keep an idle connection open through proxies.
+        if (data.toString() === "ping") { ws.send("pong"); return; }
         const session = sessions.get(newSid);
         if (session?.phone?.readyState === WebSocket.OPEN) session.phone.send(data.toString());
       });
 
-      ws.on("close", () => sessions.delete(newSid));
+      // Without its kiosk the session is over; its QR code is gone too.
+      ws.on("close", () => {
+        sessions.get(newSid)?.phone?.close(1000, "session ended");
+        sessions.delete(newSid);
+      });
 
     } else if (role === "phone" && sid && sessions.has(sid)) {
       const session = sessions.get(sid);

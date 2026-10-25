@@ -1,0 +1,18 @@
+# Deployed by .github/workflows/relay.yml to
+# https://if-kiosk-relay.<account subdomain>.workers.dev
+name = "if-kiosk-relay"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+# Pages the relay accepts browser connections from, comma-separated.
+ALLOWED_ORIGINS = "https://hadziq.github.io"
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "Session"
+
+# SQLite-backed Durable Objects are the kind available on the free plan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Session"]

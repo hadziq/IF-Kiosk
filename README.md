@@ -45,7 +45,7 @@ flowchart LR
     json --> kiosk
     json --> mobile
 
-    relay["WebSocket relay /ws<br/>local: backend/<br/>hosted: Cloudflare (next phase)"]
+    relay["WebSocket relay /ws<br/>hosted: relay/ on Cloudflare<br/>local: backend/"]
     kiosk <-->|"role=tv"| relay
     mobile <-->|"role=phone plus sid"| relay
 ```
@@ -64,9 +64,9 @@ The phone gets search, the room list of whichever floor the kiosk shows, and a t
 |-----------|-------|
 | Frontend  | React 19, Vite, Three.js, Tailwind CSS, `qrcode.react`, `lucide-react` |
 | Data      | CSV files compiled to JSON at build time (`frontend/scripts/build-data.js`) |
-| Relay     | Node.js `ws` locally (`backend/`); a Cloudflare Durable Object for the hosted site (next phase) |
+| Relay     | A Cloudflare Worker with one Durable Object per session (`relay/`); Node.js `ws` locally (`backend/`) |
 | Hosting   | GitHub Pages, deployed by GitHub Actions |
-| Testing   | `node:test` (data build and search), Jest (relay) |
+| Testing   | `node:test` (data build and search), Jest (relay protocol, run against both relays) |
 | Tooling   | npm workspaces (single lockfile at the repo root) |
 
 ## Project structure
@@ -96,8 +96,12 @@ IF-Kiosk/
 │   ├── app.js         Serves frontend/dist
 │   ├── ws/            The relay that pairs a kiosk screen with a phone
 │   ├── utils/         LAN IP detection
-│   └── tests/         Relay tests
-├── .github/workflows/ Test, build and publish to GitHub Pages
+│   └── tests/         The relay protocol tests, shared with relay/
+├── relay/             Hosted WebSocket relay: Cloudflare Worker + Durable Object
+│   ├── src/index.js   The Worker and the Session Durable Object
+│   ├── wrangler.toml  Worker name, allowed origins, Durable Object binding
+│   └── scripts/       Runs the protocol tests against the Worker in wrangler dev
+├── .github/workflows/ Publish the site to GitHub Pages, deploy the relay to Cloudflare
 └── docs/screenshots/  Images used in this README
 ```
 
@@ -213,9 +217,11 @@ Anything else is closed with code **1008**. So is a phone presenting an unknown 
 | `cmd` | phone → kiosk | `{ type: "cmd", action, payload }` where `action` is one of `selectFloor`, `selectRoom`, `selectFloorAndRoom`, `back`, `cameraRotate`, `cameraZoom`, `cameraPan`, `cameraTransform`, `cameraReset`. |
 | `state` | kiosk → phone | Current floor, selected room and camera state, so the phone UI can mirror the screen. |
 
-A phone that sends nothing for **one minute** is disconnected (`PHONE_IDLE_MS` in `backend/ws/index.js`), which frees the session for the next visitor.
+A phone that sends nothing for **one minute** is disconnected with **1000** `idle` (`PHONE_IDLE_MS`), which frees the session for the next visitor. When the kiosk disconnects, its phone is closed with **1000** `session ended`, and the session id stops working.
 
-Any relay that implements this protocol works. `backend/tests/relay.test.js` is its specification, and the hosted relay must pass the same cases.
+The kiosk sends the plain text `ping` every 30 seconds and the relay answers `pong`, so a kiosk waiting hours for a phone is not dropped as idle. On Cloudflare the answer comes from the runtime without waking the Durable Object, so an idle kiosk costs nothing.
+
+Both relays implement this protocol: `backend/ws/` locally and `relay/` on Cloudflare. `backend/tests/relay.test.js` is its specification. It runs against the local relay by default, and `npm --prefix relay test` runs the same file against the Worker in `wrangler dev`.
 
 ## Rooms and the 3D model
 
@@ -281,10 +287,10 @@ These were originally 1024×1024 PNGs averaging 1.1 MB each — 56 MB for 50 por
 npm test
 ```
 
-This runs both suites. Neither needs a database or a network.
+This runs every suite. None needs a database, a Cloudflare account or a network.
 
 - `frontend/tests/` (`node:test`): the CSV parser, every validation rule of the data build, a check that the real `data/*.csv` builds cleanly against the real models, and room lookup and search.
-- `backend/tests/relay.test.js` (Jest): the WebSocket relay — pairing, relaying, the 1008 rejections, and the one-phone-per-session limit.
+- `backend/tests/relay.test.js` (Jest): the relay protocol — pairing, relaying, ping, the 1008 rejections, the one-phone-per-session limit, and ending a session. It runs twice: against the local relay, and against the Cloudflare Worker running locally in `wrangler dev`.
 
 GitHub Actions runs the same command on every push and pull request.
 
@@ -295,9 +301,23 @@ GitHub Actions runs the same command on every push and pull request.
 `.github/workflows/pages.yml` tests and builds every push, and publishes pushes to `master` at https://hadziq.github.io/IF-Kiosk/. One-time setup in the repository settings:
 
 1. **Pages → Build and deployment → Source:** GitHub Actions.
-2. **Secrets and variables → Actions → Variables:** add `RELAY_URL` once the hosted relay exists. Until then the site works without phone pairing and shows no QR code. A page served over `https` cannot open an unencrypted `ws://` connection to a LAN relay, so the hosted site needs a `wss://` relay.
+2. **Secrets and variables → Actions → Variables:** add `RELAY_URL`, the hosted relay's address, e.g. `wss://if-kiosk-relay.<subdomain>.workers.dev`. Without it the site works without phone pairing and shows no QR code. A page served over `https` cannot open an unencrypted `ws://` connection to a LAN relay, so the hosted site needs a `wss://` relay.
 
 Point the kiosk browser at the site in fullscreen/kiosk mode.
+
+### The relay on Cloudflare
+
+`.github/workflows/relay.yml` tests `relay/` and deploys it with `wrangler deploy` whenever it changes on `master`, or when run by hand from the Actions tab. One-time setup:
+
+1. In the Cloudflare dashboard, open **Workers & Pages** and pick a `workers.dev` subdomain if asked. Note the **Account ID** shown there.
+2. Under **My Profile → API Tokens**, create a token from the **Edit Cloudflare Workers** template, limited to the lab account.
+3. In the repository, add the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (**Settings → Secrets and variables → Actions**).
+4. Run the **Relay** workflow. The relay is then live at `https://if-kiosk-relay.<subdomain>.workers.dev`.
+5. Set the `RELAY_URL` variable above to the same address with `wss://`, and re-run the **Pages** workflow so the site is rebuilt with it.
+
+`ALLOWED_ORIGINS` in `relay/wrangler.toml` lists the sites whose pages may connect; add an origin there if the kiosk is ever served from somewhere else.
+
+The free Workers plan covers a kiosk comfortably. Durable Objects bill a WebSocket message as 1/20 of a request, and the kiosk's pings are answered without one, so only a visitor actively using their phone counts against the 100,000 requests a day.
 
 ### On a LAN, without internet
 
@@ -307,7 +327,8 @@ Point the kiosk browser at the site in fullscreen/kiosk mode.
 
 ## Known limitations
 
-- **Phone pairing on the public site waits on the hosted relay.** Until `RELAY_URL` is set, GitHub Pages serves the kiosk without a QR code, and visitors use the touchscreen.
+- **Phone pairing on the public site needs `RELAY_URL`.** Without it, GitHub Pages serves the kiosk without a QR code, and visitors use the touchscreen.
+- **The relay's origin check is not authentication.** It stops other websites from using the relay from a browser; a non-browser client can still connect. A session can only be joined with its random session id, which only the kiosk's QR code shows.
 - **Sessions on the local relay are held in memory.** Restarting it drops every active pairing.
 - **The frontend ships as one bundle** of roughly 850 KB (230 KB gzipped), dominated by Three.js. Fine for a kiosk on a wired connection; worth code-splitting if the phone page is often loaded over mobile data.
 - **`lint` reports pre-existing warnings** about refs being accessed during render in `useWebSocket.js` and elsewhere. They are long-standing and unrelated to the current structure.
