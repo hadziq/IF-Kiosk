@@ -4,10 +4,10 @@
 #
 # One-time setup: Settings → Pages → Build and deployment → Source: GitHub Actions.
 #
-# The phone relay is off until the repository variable RELAY_URL is set
-# (Settings → Secrets and variables → Actions → Variables), e.g.
-# wss://if-kiosk-relay.<account>.workers.dev. Without it the kiosk works but
-# shows no QR code.
+# The kiosk pairs with phones through the relay in relay/, deployed by
+# relay.yml. The repository variable RELAY_URL overrides its address
+# (Settings → Secrets and variables → Actions → Variables); set it to "none"
+# to turn phone pairing off.
 
 name: Pages
 
@@ -40,7 +40,7 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_RELAY_URL: ${{ vars.RELAY_URL || 'none' }}
+          VITE_RELAY_URL: ${{ vars.RELAY_URL || 'wss://if-kiosk-relay.labgigaits.workers.dev' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist

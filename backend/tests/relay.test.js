@@ -1,12 +1,15 @@
-// Tests for the local WebSocket relay. The hosted relay on Cloudflare must
-// pass the same cases, so the protocol stays one protocol.
+// The relay protocol, as tests. They run against the local relay in this
+// package, or, with RELAY_TEST_URL set, against any other relay: relay/'s
+// test script points them at the Cloudflare Worker running in wrangler dev.
+// Both relays must pass the same cases, so the protocol stays one protocol.
 
 const WebSocket = require("ws");
-const server    = require("../index");
+
+const REMOTE = process.env.RELAY_TEST_URL;
+const server = REMOTE ? null : require("../index");
 
 function getWsUrl(path) {
-  const addr = server.address();
-  return `ws://localhost:${addr.port}${path}`;
+  return REMOTE ? `${REMOTE}${path}` : `ws://localhost:${server.address().port}${path}`;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -42,21 +45,51 @@ function waitForClose(ws, timeoutMs = 3000) {
 // ── WebSocket ────────────────────────────────────────────────────────
 
 describe("WebSocket /ws", () => {
-  beforeAll((done) => { server.listen(0, done); });
-  afterAll((done) => { server.close(done); });
+  beforeAll((done) => { if (server) server.listen(0, done); else done(); });
+  afterAll((done) => { if (server) server.close(done); else done(); });
 
-  it("tv role receives a session message with a sid and a LAN address hint", async () => {
+  it("tv role receives a session message with a sid", async () => {
     const { ws, firstMessage } = await connectWs("/ws?role=tv");
     const msg = await firstMessage;
     expect(msg.type).toBe("session");
     expect(typeof msg.sid).toBe("string");
     expect(msg.sid.length).toBeGreaterThan(0);
-    expect(typeof msg.lanAddress).toBe("string");
+    // Only the local relay knows a LAN address worth putting in the QR code.
+    if (!REMOTE) expect(typeof msg.lanAddress).toBe("string");
     ws.close();
   });
 
+  it("answers the kiosk's ping with pong", async () => {
+    const { ws, firstMessage } = await connectWs("/ws?role=tv");
+    await firstMessage;
+    const reply = new Promise((resolve) => ws.once("message", (data) => resolve(data.toString())));
+    ws.send("ping");
+    expect(await reply).toBe("pong");
+    ws.close();
+  });
+
+  it("ends the phone's session when the kiosk leaves", async () => {
+    const { ws: tvWs, firstMessage } = await connectWs("/ws?role=tv");
+    const { sid } = await firstMessage;
+
+    const phoneConnected = waitForMessage(tvWs);
+    const { ws: phoneWs } = await connectWs(`/ws?role=phone&sid=${sid}`);
+    await phoneConnected;
+
+    // Against wrangler dev the close frame arrives at once, but the TCP
+    // connection lingers about 10 s and this client reports the close only
+    // then. Chromium reports it within a fraction of a second.
+    const phoneClosed = waitForClose(phoneWs, 15000);
+    tvWs.close();
+    expect(await phoneClosed).toEqual({ code: 1000, reason: "session ended" });
+
+    const late = new WebSocket(getWsUrl(`/ws?role=phone&sid=${sid}`));
+    expect((await waitForClose(late)).code).toBe(1008);
+  }, 20000);
+
   it.each([
-    ["phone with an unknown sid", "/ws?role=phone&sid=INVALID-SID-THAT-DOES-NOT-EXIST"],
+    ["phone with a malformed sid", "/ws?role=phone&sid=INVALID-SID-THAT-DOES-NOT-EXIST"],
+    ["phone with an unknown sid",  "/ws?role=phone&sid=00000000-0000-4000-8000-000000000000"],
     ["phone with no sid",         "/ws?role=phone"],
     ["an unknown role",           "/ws?role=unknown"],
   ])("rejects %s with close code 1008", async (_label, path) => {
@@ -70,7 +103,7 @@ describe("WebSocket /ws", () => {
     const { sid } = await firstMessage;
 
     const tvNext  = waitForMessage(tvWs);
-    const phoneWs = new WebSocket(getWsUrl(`/ws?role=phone&sid=${sid}`));
+    const { ws: phoneWs } = await connectWs(`/ws?role=phone&sid=${sid}`);
     expect((await tvNext).type).toBe("phoneConnected");
 
     const tvDisconnect = waitForMessage(tvWs);

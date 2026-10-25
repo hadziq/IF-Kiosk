@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "relay"
   ],
   "scripts": {
     "dev": "concurrently -k --kill-others-on-fail -n BACKEND,FRONTEND -c green,blue \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
@@ -13,7 +14,7 @@
     "start": "npm --prefix backend run start",
     "build": "npm --prefix frontend run build",
     "data:check": "npm --prefix frontend run data:check",
-    "test": "npm --prefix frontend test && npm --prefix backend test"
+    "test": "npm --prefix frontend test && npm --prefix backend test && npm --prefix relay test"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
