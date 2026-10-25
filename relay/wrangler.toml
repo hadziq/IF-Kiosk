@@ -1,5 +1,5 @@
 # Deployed by .github/workflows/relay.yml to
-# https://if-kiosk-relay.<account subdomain>.workers.dev
+# https://if-kiosk-relay.labgigaits.workers.dev (the lab GIGA account)
 name = "if-kiosk-relay"
 main = "src/index.js"
 compatibility_date = "2025-09-01"

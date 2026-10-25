@@ -301,7 +301,7 @@ GitHub Actions runs the same command on every push and pull request.
 `.github/workflows/pages.yml` tests and builds every push, and publishes pushes to `master` at https://hadziq.github.io/IF-Kiosk/. One-time setup in the repository settings:
 
 1. **Pages → Build and deployment → Source:** GitHub Actions.
-2. **Secrets and variables → Actions → Variables:** add `RELAY_URL`, the hosted relay's address, e.g. `wss://if-kiosk-relay.<subdomain>.workers.dev`. Without it the site works without phone pairing and shows no QR code. A page served over `https` cannot open an unencrypted `ws://` connection to a LAN relay, so the hosted site needs a `wss://` relay.
+2. **Nothing else is required.** The site is built to use the relay at `wss://if-kiosk-relay.labgigaits.workers.dev`. To use another relay, set the repository variable `RELAY_URL` (**Secrets and variables → Actions → Variables**); set it to `none` to turn phone pairing off. A page served over `https` cannot open an unencrypted `ws://` connection to a LAN relay, so the hosted site needs a `wss://` relay.
 
 Point the kiosk browser at the site in fullscreen/kiosk mode.
 
@@ -309,11 +309,12 @@ Point the kiosk browser at the site in fullscreen/kiosk mode.
 
 `.github/workflows/relay.yml` tests `relay/` and deploys it with `wrangler deploy` whenever it changes on `master`, or when run by hand from the Actions tab. One-time setup:
 
-1. In the Cloudflare dashboard, open **Workers & Pages** and pick a `workers.dev` subdomain if asked. Note the **Account ID** shown there.
+1. In the Cloudflare dashboard of the lab GIGA account, open **Workers & Pages**. Its `workers.dev` subdomain is `labgigaits`; note the **Account ID** shown there.
 2. Under **My Profile → API Tokens**, create a token from the **Edit Cloudflare Workers** template, limited to the lab account.
 3. In the repository, add the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (**Settings → Secrets and variables → Actions**).
-4. Run the **Relay** workflow. The relay is then live at `https://if-kiosk-relay.<subdomain>.workers.dev`.
-5. Set the `RELAY_URL` variable above to the same address with `wss://`, and re-run the **Pages** workflow so the site is rebuilt with it.
+4. Run the **Relay** workflow. The relay is then live at `https://if-kiosk-relay.labgigaits.workers.dev`.
+
+If the relay ever moves to another account or subdomain, set `RELAY_URL` to its new `wss://` address and re-run the **Pages** workflow.
 
 `ALLOWED_ORIGINS` in `relay/wrangler.toml` lists the sites whose pages may connect; add an origin there if the kiosk is ever served from somewhere else.
 
@@ -327,7 +328,7 @@ The free Workers plan covers a kiosk comfortably. Durable Objects bill a WebSock
 
 ## Known limitations
 
-- **Phone pairing on the public site needs `RELAY_URL`.** Without it, GitHub Pages serves the kiosk without a QR code, and visitors use the touchscreen.
+- **Phone pairing on the public site depends on the relay.** If it cannot be reached when the kiosk loads, no QR code appears; the kiosk retries every few seconds, and the touchscreen keeps working.
 - **The relay's origin check is not authentication.** It stops other websites from using the relay from a browser; a non-browser client can still connect. A session can only be joined with its random session id, which only the kiosk's QR code shows.
 - **Sessions on the local relay are held in memory.** Restarting it drops every active pairing.
 - **The frontend ships as one bundle** of roughly 850 KB (230 KB gzipped), dominated by Three.js. Fine for a kiosk on a wired connection; worth code-splitting if the phone page is often loaded over mobile data.

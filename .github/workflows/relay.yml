@@ -1,5 +1,5 @@
 # Tests the phone relay (relay/) and deploys it to Cloudflare Workers, at
-# https://if-kiosk-relay.<account subdomain>.workers.dev, whenever it changes
+# https://if-kiosk-relay.labgigaits.workers.dev, whenever it changes
 # on master. Run it by hand from the Actions tab for the first deploy.
 #
 # Needs two repository secrets (Settings → Secrets and variables → Actions):
