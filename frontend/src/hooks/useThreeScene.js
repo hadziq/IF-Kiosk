@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { GESTURES } from "../lib/config";
 import { C } from "../lib/constants";
 import { applyDefaultCameraView } from "../lib/cameraView";
 
@@ -38,6 +39,13 @@ export function useThreeScene(mountRef) {
     controls.dampingFactor = 0.05;
     controls.minDistance = 1;
     controls.maxDistance = 200;
+    if (GESTURES === "map") {
+      // Map-style: one finger (or the left mouse button) pans along the floor,
+      // two fingers (or the right button) rotate, pinch zooms.
+      controls.screenSpacePanning = false;
+      controls.touches      = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+      controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    }
     applyDefaultCameraView(camera, controls);
 
     let animId;

@@ -4,7 +4,8 @@ import * as THREE from "three";
 import { C, EXCLUDE, getRoomSort, groupMeshNames } from "../lib/constants";
 import { loadData }     from "../lib/data";
 import { getRoom }      from "../lib/directory";
-import { RELAY_URL }    from "../lib/config";
+import { GESTURES, RELAY_URL } from "../lib/config";
+import { panBy, rotateBy, zoomBy } from "../lib/cameraMoves";
 import { useThreeScene }  from "../hooks/useThreeScene";
 import { useAnimations }  from "../hooks/useAnimations";
 import { useModelLoader } from "../hooks/useModelLoader";
@@ -77,71 +78,24 @@ export default function Kiosk() {
       setActiveFloor(null); setView("floors"); loadTC();
     }
 
-    if (action === "cameraRotate") {
-      const { camera, controls } = sceneRef.current;
-      if (!camera || !controls) return;
-      const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
-      const sph = new THREE.Spherical().setFromVector3(offset);
-      sph.theta -= payload.dx * 0.005;
-      sph.phi    = Math.max(0.05, Math.min(Math.PI - 0.05, sph.phi - payload.dy * 0.005));
-      offset.setFromSpherical(sph);
-      camera.position.copy(controls.target).add(offset);
-    }
+    const { camera, controls } = sceneRef.current;
+    if (action.startsWith("camera") && (!camera || !controls)) return;
+    const ground = GESTURES === "map";
 
-    if (action === "cameraZoom") {
-      const { camera, controls } = sceneRef.current;
-      if (!camera || !controls) return;
-      const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
-      const scale  = payload.scale ?? (payload.direction === "in" ? 0.93 : 1.07);
-      const newLen = Math.max(controls.minDistance, Math.min(controls.maxDistance, offset.length() * scale));
-      offset.setLength(newLen);
-      camera.position.copy(controls.target).add(offset);
-    }
+    if (action === "cameraRotate") rotateBy(camera, controls, payload.dx, payload.dy);
+    if (action === "cameraZoom")   zoomBy(camera, controls, payload.scale ?? (payload.direction === "in" ? 0.93 : 1.07));
+    if (action === "cameraPan")    panBy(camera, controls, payload.dx, payload.dy, { ground });
 
+    // One frame of a touch gesture on the phone, batched: any of zoom, pan
+    // and rotate, depending on the gesture scheme.
     if (action === "cameraTransform") {
-      const { camera, controls } = sceneRef.current;
-      if (!camera || !controls) return;
-      if (payload.zoom !== 1) {
-        const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
-        const newLen = Math.max(controls.minDistance, Math.min(controls.maxDistance, offset.length() * payload.zoom));
-        offset.setLength(newLen);
-        camera.position.copy(controls.target).add(offset);
-      }
-      if (payload.panDx !== 0 || payload.panDy !== 0) {
-        const distance = camera.position.distanceTo(controls.target);
-        const speed    = distance * 0.002;
-        const dir = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3();
-        camera.getWorldDirection(dir);
-        right.crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
-        up.crossVectors(right, dir).normalize();
-        const panOffset = new THREE.Vector3()
-          .addScaledVector(right, -payload.panDx * speed)
-          .addScaledVector(up,     payload.panDy * speed);
-        camera.position.add(panOffset);
-        controls.target.add(panOffset);
-      }
+      const { zoom = 1, panDx = 0, panDy = 0, rotateDx = 0, rotateDy = 0 } = payload;
+      if (zoom !== 1)                     zoomBy(camera, controls, zoom);
+      if (panDx !== 0 || panDy !== 0)     panBy(camera, controls, panDx, panDy, { ground });
+      if (rotateDx !== 0 || rotateDy !== 0) rotateBy(camera, controls, rotateDx, rotateDy);
     }
 
-    if (action === "cameraPan") {
-      const { camera, controls } = sceneRef.current;
-      if (!camera || !controls) return;
-      const distance = camera.position.distanceTo(controls.target);
-      const speed    = distance * 0.002;
-      const dir = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-      right.crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
-      up.crossVectors(right, dir).normalize();
-      const offset = new THREE.Vector3()
-        .addScaledVector(right, -payload.dx * speed)
-        .addScaledVector(up,     payload.dy * speed);
-      camera.position.add(offset);
-      controls.target.add(offset);
-    }
-
-    if (action === "cameraReset") {
-      const { controls } = sceneRef.current;
-      if (controls) controls.reset();
-    }
+    if (action === "cameraReset") controls.reset();
   };
 
   // ── WebSocket (sync state to phone on connect) ────────────────────

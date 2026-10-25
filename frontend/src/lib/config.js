@@ -21,3 +21,15 @@ export const RELAY_URL =
   configured === "none" ? null
   : configured ? configured.replace(/\/+$/, "")
   : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`;
+
+/**
+ * Touch gestures for the 3D view, on the kiosk's screen and on the phone.
+ *
+ * - "map" (default): one finger pans along the floor, two fingers rotate and
+ *   pinch to zoom, as in map apps.
+ * - "orbit": one finger rotates, two fingers pan and pinch, the OrbitControls
+ *   default this kiosk shipped with. Open the kiosk with ?gestures=orbit to
+ *   use it; the QR code passes the choice on to the phone.
+ */
+export const GESTURES =
+  new URLSearchParams(window.location.search).get("gestures") === "orbit" ? "orbit" : "map";
