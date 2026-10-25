@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BASE, RELAY_URL } from "../lib/config";
+import { BASE, GESTURES, RELAY_URL } from "../lib/config";
 
 /**
  * Origin the phone should load the app from. Normally the kiosk's own. When
@@ -18,8 +18,12 @@ function phoneOrigin({ mobileOrigin, lanAddress }) {
 // How often the kiosk pings the relay while waiting for a phone.
 const PING_MS = 30 * 1000;
 
-/** The URL in the QR code. The phone loads the same build, so it knows the relay already. */
-const buildMobileUrl = (msg) => `${phoneOrigin(msg)}${BASE}mobile/?sid=${encodeURIComponent(msg.sid)}`;
+/**
+ * The URL in the QR code. The phone loads the same build, so it knows the
+ * relay already; it only needs the session, and the gestures if not default.
+ */
+const buildMobileUrl = (msg) =>
+  `${phoneOrigin(msg)}${BASE}mobile/?sid=${encodeURIComponent(msg.sid)}${GESTURES === "map" ? "" : `&gestures=${GESTURES}`}`;
 
 /**
  * Connects the TV browser to the WebSocket relay. With no relay configured

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Search, X, LoaderCircle, CheckCircle, ChevronRight } from "lucide-react";
 import { C, DAYS, FLOORS, EXCLUDE, displayName } from "../lib/constants";
-import { RELAY_URL } from "../lib/config";
+import { GESTURES, RELAY_URL } from "../lib/config";
 import { loadData } from "../lib/data";
 import { search } from "../lib/directory";
 
@@ -17,11 +17,13 @@ function CameraControls({ send }) {
   const getMid  = () => ({ x: (vals()[0].x + vals()[1].x) / 2, y: (vals()[0].y + vals()[1].y) / 2 });
   const getDist = () => { const [a, b] = vals(); return Math.hypot(b.x - a.x, b.y - a.y); };
 
-  const scheduleTransform = (panDx, panDy, zoom) => {
-    if (!pending.current) pending.current = { panDx: 0, panDy: 0, zoom: 1 };
-    pending.current.panDx += panDx;
-    pending.current.panDy += panDy;
-    pending.current.zoom  *= zoom;
+  const scheduleTransform = ({ panDx = 0, panDy = 0, rotateDx = 0, rotateDy = 0, zoom = 1 }) => {
+    if (!pending.current) pending.current = { panDx: 0, panDy: 0, rotateDx: 0, rotateDy: 0, zoom: 1 };
+    pending.current.panDx    += panDx;
+    pending.current.panDy    += panDy;
+    pending.current.rotateDx += rotateDx;
+    pending.current.rotateDy += rotateDy;
+    pending.current.zoom     *= zoom;
     if (!rafId.current) {
       rafId.current = requestAnimationFrame(() => {
         send("cameraTransform", pending.current);
@@ -45,8 +47,10 @@ function CameraControls({ send }) {
       const dx = e.clientX - prev.x;
       const dy = e.clientY - prev.y;
       ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)
-        send("cameraRotate", { dx, dy });
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        if (GESTURES === "map") scheduleTransform({ panDx: dx, panDy: dy });
+        else send("cameraRotate", { dx, dy });
+      }
     } else if (count === 2) {
       const oldMid  = getMid();
       const oldDist = getDist();
@@ -54,10 +58,11 @@ function CameraControls({ send }) {
       const newMid  = getMid();
       const newDist = getDist();
 
-      const panDx = newMid.x - oldMid.x;
-      const panDy = newMid.y - oldMid.y;
-      const zoom  = oldDist > 1 ? oldDist / newDist : 1;
-      scheduleTransform(panDx, panDy, zoom);
+      const dx   = newMid.x - oldMid.x;
+      const dy   = newMid.y - oldMid.y;
+      const zoom = oldDist > 1 ? oldDist / newDist : 1;
+      if (GESTURES === "map") scheduleTransform({ rotateDx: dx, rotateDy: dy, zoom });
+      else scheduleTransform({ panDx: dx, panDy: dy, zoom });
     }
   };
 
@@ -77,7 +82,7 @@ function CameraControls({ send }) {
         Kontrol Kamera
       </p>
 
-      {/* Rotate drag pad */}
+      {/* Touch pad: gestures follow GESTURES, chosen on the kiosk */}
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -97,7 +102,7 @@ function CameraControls({ send }) {
         }}
       >
         <span style={{ color: "#ffffff", fontSize: "11px", letterSpacing: "1.5px", pointerEvents: "none", textTransform: "uppercase" }}>
-          1 finger: rotate  ·  2 fingers: pan / pinch
+          {GESTURES === "map" ? "1 finger: pan  ·  2 fingers: rotate / pinch" : "1 finger: rotate  ·  2 fingers: pan / pinch"}
         </span>
       </div>
 
