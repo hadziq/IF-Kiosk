@@ -145,6 +145,7 @@ export function buildData(tables, { meshNames = null, photos = null } = {}) {
       is_ruang_dosen: flag("ruangan", line, "ruang_dosen", row.ruang_dosen ?? ""),
       is_ruangan:     flag("ruangan", line, "ruangan",     row.ruangan ?? ""),
       keterangan:     row.keterangan || null,
+      label_peta:     row.label_peta || null,
     };
     rooms.push(room);
     roomByKey.set(meshKey(nama), room);

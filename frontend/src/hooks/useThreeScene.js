@@ -48,10 +48,15 @@ export function useThreeScene(mountRef) {
     }
     applyDefaultCameraView(camera, controls);
 
+    // Called with (camera, viewportHeight) right before each frame is drawn,
+    // for objects that follow the camera, such as the room labels.
+    const onFrame = new Set();
+
     let animId;
     const animate = () => {
       animId = requestAnimationFrame(animate);
       controls.update();
+      onFrame.forEach((fn) => fn(camera, el.clientHeight));
       renderer.render(scene, camera);
     };
     animate();
@@ -65,7 +70,7 @@ export function useThreeScene(mountRef) {
     const resizeObserver = new ResizeObserver(resizeScene);
     resizeObserver.observe(el);
 
-    sceneRef.current = { scene, camera, renderer, controls };
+    sceneRef.current = { scene, camera, renderer, controls, onFrame };
 
     return () => {
       cancelAnimationFrame(animId);
