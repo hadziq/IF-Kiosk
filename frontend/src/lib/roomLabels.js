@@ -30,6 +30,13 @@ const FADE_IN_MS = 600;
 
 const TEXT_COLOR     = new THREE.Color(C.text);
 const SELECTED_COLOR = new THREE.Color(C.green);
+// The "class in progress" badge above a label, as a share of the label's
+// text height, and the gap between the two.
+const BADGE_HEIGHT = 0.8;
+const BADGE_GAP    = 0.3;
+// Badges are too many to all be readable from the whole-floor view, so only
+// the one the idle board points at grows to this height on screen.
+const FOCUS_BADGE_PX = 36;
 
 export const ROOM_LABELS = "__room_labels__";
 
@@ -111,6 +118,30 @@ function drawToiletSign(canvas, genders, selected) {
   });
 }
 
+/** A "class in progress" badge: dark text on a pill in the live colour, with a dot. */
+function drawLiveBadge(text) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const font = "500 64px 'DM Mono', monospace";
+  ctx.font = font;
+  const height = 104, padX = 34, dot = 22;
+  canvas.width = Math.ceil(ctx.measureText(text).width + 2 * padX + dot * 2);
+  canvas.height = height;
+
+  ctx.font = font;
+  ctx.beginPath();
+  ctx.roundRect(4, 4, canvas.width - 8, height - 8, (height - 8) / 2);
+  ctx.fillStyle = C.live;
+  ctx.fill();
+  ctx.fillStyle = C.bg;
+  ctx.beginPath();
+  ctx.arc(padX + dot / 2, height / 2, dot / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, padX + dot * 2, height / 2 + 3);
+  return canvas;
+}
+
 /**
  * Labels for one loaded floor model. `entries` come from getMapLabels(); a
  * room whose meshes are missing from the model gets no label.
@@ -179,7 +210,9 @@ export class RoomLabels {
         text.fontSize = fontSize;
         await layout(text);
       }
+      const [, minY, , maxY] = text.textRenderInfo.blockBounds;
       label.height = fontSize;
+      label.blockHeight = maxY - minY;
       label.ready = true;
     });
   }
@@ -212,6 +245,51 @@ export class RoomLabels {
       if (label.redraw) label.redraw(isSelected);
       else label.object.color = isSelected ? SELECTED_COLOR : TEXT_COLOR;
     }
+  }
+
+  /**
+   * Puts a "class in progress" badge above the label of each room in
+   * `badges` (a Map of mesh name to short course name) and removes the rest;
+   * null removes them all. The badge of `focus` pulses.
+   */
+  setLive(badges, focus = null) {
+    this.liveFocus = focus;
+    for (const label of this.labels) {
+      const room = badges && !label.redraw ? label.meshes.find((m) => badges.has(m)) : null;
+      const text = room ? badges.get(room) : null;
+      if (label.badge && label.badge.userData.text !== text) this.removeBadge(label);
+      label.badgeText = text;
+      label.badgeRoom = room;
+    }
+  }
+
+  // Drawn once the label's own size is known, which may be after setLive().
+  addBadge(label) {
+    const canvas = drawLiveBadge(label.badgeText);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    const height = label.height * BADGE_HEIGHT;
+    const geometry = new THREE.PlaneGeometry((height * canvas.width) / canvas.height, height);
+    geometry.translate(0, height / 2, 0);
+    const badge = new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false, toneMapped: false }),
+    );
+    badge.userData.text = label.badgeText;
+    badge.position.y = label.blockHeight + label.height * BADGE_GAP;
+    badge.renderOrder = 2;
+    label.object.add(badge);
+    label.badge = badge;
+  }
+
+  removeBadge(label) {
+    const { badge } = label;
+    badge.removeFromParent();
+    badge.geometry.dispose();
+    badge.material.map.dispose();
+    badge.material.dispose();
+    label.badge = null;
   }
 
   update(camera, viewportHeight) {
@@ -253,7 +331,8 @@ export class RoomLabels {
         opacity = smoothstep((px - MIN_PX) / FADE_PX) * (this.selected ? DIMMED : 1);
       }
       opacity *= fadeIn;
-      object.visible = opacity > 0.01;
+      const focused = !!label.badge && label.badgeRoom === this.liveFocus;
+      object.visible = opacity > 0.01 || focused;
 
       if (object instanceof Text) {
         object.fillOpacity = opacity;
@@ -261,11 +340,22 @@ export class RoomLabels {
       } else {
         object.material.opacity = opacity;
       }
+
+      if (label.badgeText && !label.badge) this.addBadge(label);
+      if (label.badge) {
+        const { badge } = label;
+        const grow = focused ? Math.max(1, FOCUS_BADGE_PX / (px * BADGE_HEIGHT)) : 1;
+        const pulse = focused ? 0.5 + 0.5 * Math.sin(performance.now() / 250) : 0;
+        badge.scale.setScalar(grow * (1 + 0.08 * pulse));
+        badge.renderOrder = focused ? 3 : 2;
+        badge.material.opacity = focused ? fadeIn : opacity;
+      }
     }
   }
 
   dispose() {
     this.group.removeFromParent();
+    for (const label of this.labels) if (label.badge) this.removeBadge(label);
     for (const { object } of this.labels) {
       if (object instanceof Text) object.dispose();
       else { object.geometry.dispose(); object.material.map.dispose(); object.material.dispose(); }

@@ -26,6 +26,7 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 - **Room names on the map**: every room carries its name on the 3D model, sized to fit the room, so visitors can find a room by looking before they tap. See [Room labels](#room-labels).
 - **Room directory** — search and browse rooms by floor, see whether a room is a classroom, lab or lecturer office.
 - **Class schedules** — each classroom's schedule for today, from the semester timetable.
+- **"Sedang berlangsung" idle board** — left untouched on Lantai 1, the kiosk lists the classes in progress there, with the next ones to start, and colours their rooms on the map. See [Idle board](#idle-board).
 - **Lecturer directory** — search lecturers by name or by their code (e.g. `HF`) and jump straight to their office.
 - **QR-code phone control** — scan a QR code on the kiosk to drive camera pan/zoom/rotate and navigation from your own phone over a WebSocket relay, without touching the kiosk screen.
 - **No server, no database** — rooms, lecturers and schedules live in CSV files in `data/`. A build step validates them and turns them into one JSON file, and the whole kiosk is static files that GitHub Pages can host.
@@ -87,7 +88,7 @@ IF-Kiosk/
 │   ├── src/
 │   │   ├── main.jsx       Entry point: picks a page from the URL path
 │   │   ├── pages/         Kiosk (/) and MobileControl (/mobile/)
-│   │   ├── components/    Sidebar, SchedulePanel, QROverlay
+│   │   ├── components/    Sidebar, SchedulePanel, QRPanel
 │   │   ├── hooks/         Three.js scene, animations, model loading, WebSocket
 │   │   └── lib/           Constants, deployment config, data loading, room lookup and search
 │   ├── tests/         Tests for the data build and for search
@@ -295,6 +296,17 @@ Rooms in the model without a row (the `Akses_SPMB_*` markers, `SPMB_*` on Lantai
 
 Labels are drawn by `frontend/src/lib/roomLabels.js`; which rooms get which label is decided by `getMapLabels` in `frontend/src/lib/directory.js`.
 `label_peta` is also searchable from the phone, so a room labelled `Mushola` is found by searching for it.
+
+### Idle board
+
+After 10 s untouched (`IDLE_MS` in `frontend/src/pages/Kiosk.jsx`), the model starts to turn. On Lantai 1, the floor the kiosk stands on, the "Sedang berlangsung" board also appears:
+
+- **The board** lists each class in progress on the floor: room, course, lecturers and time left, then the classes that start next. With nothing in progress it says so and shows the next start, on a later day if need be.
+- **The map** turns each room in use cyan and puts a short course name above its label, e.g. `SBD C` for `IF_Sistem Basis Data C`: the name itself when it is 14 characters or fewer, otherwise its initials (`parseCourse` in `frontend/src/lib/directory.js`). Every 6 s the board moves to the next class, and that room pulses and its badge grows big enough to read from the whole-floor view.
+- **The model turns slower** while the board shows, so the badges stay readable.
+- **Any touch closes the board.** On any other floor or the building overview, the kiosk returns to Lantai 1 after 60 s untouched.
+
+The board follows the semester timetable, not who actually turned up, and says so in its footer. To try it outside class hours, open the kiosk with `?sekarang=<hari>-<JJ:MM>`, e.g. `?sekarang=Senin-09:45`; the clock starts there and runs on.
 
 ## Lecturer photos
 

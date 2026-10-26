@@ -33,3 +33,19 @@ export const RELAY_URL =
  */
 export const GESTURES =
   new URLSearchParams(window.location.search).get("gestures") === "orbit" ? "orbit" : "map";
+
+/**
+ * The kiosk's clock, for the idle board of classes in progress. Open the
+ * kiosk with ?sekarang=Senin-09:45 to try the board outside class hours: the
+ * clock starts at the next such weekday and time, and runs on from there.
+ */
+const WEEKDAYS = ["minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
+const fakeNow = new URLSearchParams(window.location.search).get("sekarang")?.toLowerCase().match(/^([a-z]+)-(\d{2}):(\d{2})$/);
+const clockOffset = (() => {
+  if (!fakeNow || !WEEKDAYS.includes(fakeNow[1])) return 0;
+  const target = new Date();
+  target.setHours(Number(fakeNow[2]), Number(fakeNow[3]), 0, 0);
+  target.setDate(target.getDate() + ((WEEKDAYS.indexOf(fakeNow[1]) - target.getDay() + 7) % 7));
+  return target.getTime() - Date.now();
+})();
+export const kioskNow = () => new Date(Date.now() + clockOffset);

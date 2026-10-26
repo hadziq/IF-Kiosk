@@ -52,6 +52,7 @@ export function Sidebar({
   onFloorSelect,
   onBack,
   onRoomSelect,
+  footer,
 }) {
   const activeRoomRef = useRef(null);
 
@@ -121,6 +122,13 @@ export function Sidebar({
       {status === "error" && (
         <div style={{ background: "#200a10", border: "1px solid #5a1020", borderRadius: "6px", padding: "10px", fontSize: "12px", color: "#ff4060" }}>
           ⚠ {errorMsg}
+        </div>
+      )}
+
+      {/* footer (the phone QR code): pinned to the bottom while the lists scroll */}
+      {footer && (
+        <div style={{ flexShrink: 0, position: "sticky", bottom: "-20px", margin: "auto -16px -20px", padding: "16px", background: C.sidebar, borderTop: `1px solid ${C.border}` }}>
+          {footer}
         </div>
       )}
 
