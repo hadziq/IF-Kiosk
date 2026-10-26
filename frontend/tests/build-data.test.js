@@ -2,10 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { buildData, parseCsv, readMeshNames } from "../scripts/build-data.js";
 
-const root = new URL("../..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../..", import.meta.url));
 
 const tables = (overrides = {}) => ({
   ruangan:  parseCsv("nama_ruang,lantai,kelas,lab,ruang_dosen,ruangan,keterangan\nIF_101,Lantai 1,1,,,,\nIF_233,Lantai 2,,,1,,\n"),
