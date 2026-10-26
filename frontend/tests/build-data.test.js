@@ -84,6 +84,19 @@ test("buildData reports every class that overlaps a long one, not only its neigh
   ]);
 });
 
+test("buildData warns when a lecturer teaches in two rooms at overlapping times", () => {
+  const { warnings } = buildData(tables({
+    ruangan: parseCsv("nama_ruang,lantai,kelas,lab,ruang_dosen,ruangan,keterangan\nIF_101,Lantai 1,1,,,,\nIF_102,Lantai 1,1,,,,\nIF_233,Lantai 2,,,1,,\n"),
+    jadwal:  parseCsv("hari,jam_mulai,jam_selesai,nama_ruang,mata_kuliah,dosen_1,dosen_2,dosen_3\n" +
+      "Senin,07:00,09:30,IF_101,A,HF,RJ,\nSenin,09:00,11:30,IF_102,B,RJ,HF,\n" +
+      "Senin,09:30,12:00,IF_101,C,HF,,\nSelasa,09:00,11:30,IF_102,D,HF,,\n"),
+  }), { photos: new Set(["HF", "RJ"]) });
+  assert.deepEqual(warnings, [
+    "jadwal.csv:3: RJ, HF mengajar B di IF_102 dan A di IF_101 (baris 2) pada jam yang sama hari Senin",
+    "jadwal.csv:4: HF mengajar C di IF_101 dan B di IF_102 (baris 3) pada jam yang sama hari Senin",
+  ]);
+});
+
 test("buildData warns about overlapping classes and missing photos", () => {
   const { warnings } = buildData(tables({
     jadwal: parseCsv("hari,jam_mulai,jam_selesai,nama_ruang,mata_kuliah,dosen_1,dosen_2,dosen_3\n" +

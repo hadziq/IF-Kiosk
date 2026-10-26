@@ -51,7 +51,7 @@ IF_217A,Lantai 2,,,,1,Ruang Rapat
 IF_217B,Lantai 2,,,,1,Ruang Rapat
 IF_237,Lantai 2,,,,1,Mushola
 IF_222,Lantai 2,,,1,1,Alumni Corner
-Lounge,Lantai 2,,,,1,Lounge
+Lounge,Lantai 2,,,1,1,Lounge
 Ruang Sidang,Lantai 2,,,,1,Ruang Sidang
 Tata Usaha,Lantai 2,,,,1,Tata Usaha
 Aula Handayani,Lantai 2,1,,,,
@@ -76,5 +76,3 @@ Toilet_Laki-laki_Utara_L3,Lantai 3,,,,1,Toilet Laki-laki Mahasiswa - Sisi Utara
 Toilet_Perempuan_Utara_L3,Lantai 3,,,,1,Toilet Perempuan Mahasiswa - Sisi Utara
 Toilet_Laki-laki_Selatan_L3,Lantai 3,,,,1,Toilet Laki-laki Mahasiswa - Sisi Selatan
 Toilet_Perempuan_Selatan_L3,Lantai 3,,,,1,Toilet Perempuan Mahasiswa - Sisi Selatan
-SPMB Jatim,Lantai 4,,,,1,SPMB Jatim
-SPMB Surabaya,Lantai 4,,,,1,SPMB Surabaya

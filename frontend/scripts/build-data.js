@@ -221,6 +221,21 @@ export function buildData(tables, { meshNames = null, photos = null } = {}) {
       warn("jadwal", b.line, `${b.mata_kuliah} bentrok dengan ${a.mata_kuliah} (baris ${a.line}) di ${b.nama_ruang} hari ${b.hari}`);
     }
   }
+  // A lecturer cannot teach in two rooms at once, so one of the two rows
+  // usually has a wrong time or code. Two classes in one room warn above.
+  const byStart = [...jadwal].sort((a, b) =>
+    DAYS.indexOf(a.hari) - DAYS.indexOf(b.hari) || a.jam_mulai.localeCompare(b.jam_mulai));
+  for (let i = 0; i < byStart.length; i++) {
+    const a = byStart[i];
+    for (let j = i + 1; j < byStart.length; j++) {
+      const b = byStart[j];
+      if (b.hari !== a.hari || b.jam_mulai >= a.jam_selesai) break;
+      const both = b.nama_ruang === a.nama_ruang ? [] : b.dosen.filter((kode) => a.dosen.includes(kode));
+      if (both.length) {
+        warn("jadwal", b.line, `${both.join(", ")} mengajar ${b.mata_kuliah} di ${b.nama_ruang} dan ${a.mata_kuliah} di ${a.nama_ruang} (baris ${a.line}) pada jam yang sama hari ${b.hari}`);
+      }
+    }
+  }
 
   const body = {
     rooms,
