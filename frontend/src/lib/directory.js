@@ -39,6 +39,52 @@ export function getRoom(data, name) {
   };
 }
 
+// Toilets follow Toilet_<Laki-laki|Perempuan>_<Utara|Selatan>_L<floor>
+// (README, "Rooms and the 3D model").
+const TOILET = /^Toilet_(Laki-laki|Perempuan)_(Utara|Selatan)_L\d+$/;
+
+/**
+ * The labels drawn on a floor's 3D model, one per room in the data, as
+ * { meshes, text } or, for toilets, { meshes, toilet: [genders] }. A room's
+ * label_peta overrides its name, and "-" hides its label. The men's and
+ * women's toilets on one side of a floor sit side by side, so they share one
+ * pictogram, the way building maps draw them.
+ */
+export function getMapLabels(data, floor) {
+  const labels = [];
+  const toilets = new Map();
+  for (const room of data.rooms) {
+    if (room.lantai !== floor || room.label_peta === "-") continue;
+    const mesh = meshKey(room.nama_ruang);
+    const toilet = !room.label_peta && mesh.match(TOILET);
+    if (!toilet) {
+      labels.push({ meshes: [mesh], text: room.label_peta ?? displayName(room.nama_ruang) });
+      continue;
+    }
+    const [, gender, side] = toilet;
+    let group = toilets.get(side);
+    if (!group) {
+      toilets.set(side, (group = { meshes: [], toilet: [] }));
+      labels.push(group);
+    }
+    group.meshes.push(mesh);
+    group.toilet.push(gender);
+  }
+  for (const group of toilets.values()) {
+    // Men on the left, as on most signs, whatever the order of the CSV.
+    group.toilet.sort((a, b) => (a === "Laki-laki" ? -1 : b === "Laki-laki" ? 1 : 0));
+  }
+  return labels;
+}
+
+/**
+ * Joins a short or numbered word to its neighbour with a no-break space, so a
+ * label may wrap as "Ruang / Sidang" but never as "IF / 218" or "LP / 1".
+ */
+export const glueShortWords = (label) =>
+  label.replace(/(\S+) (?=(\S+))/g, (match, before, after) =>
+    [before, after].some((word) => word.length <= 2 || /\d/.test(word)) ? `${before} ` : match);
+
 const byName = (a, b) => a.nama_ruang.localeCompare(b.nama_ruang);
 
 /**
@@ -74,7 +120,7 @@ export function search(data, query, day) {
 
   const offices = data.rooms
     .filter((r) => r.is_ruang_dosen &&
-      (hasRoom(r.nama_ruang) || has(r.keterangan) || (data.occupants[r.nama_ruang] ?? []).some(dosenMatches)))
+      (hasRoom(r.nama_ruang) || has(r.keterangan) || has(r.label_peta) || (data.occupants[r.nama_ruang] ?? []).some(dosenMatches)))
     .sort(byName)
     .slice(0, 20)
     .map((r) => ({
@@ -87,7 +133,7 @@ export function search(data, query, day) {
 
   const seen = new Set([...schedules, ...offices].map((r) => r.room_name));
   const rooms = data.rooms
-    .filter((r) => !r.is_ruang_dosen && !seen.has(r.nama_ruang) && (hasRoom(r.nama_ruang) || has(r.keterangan)))
+    .filter((r) => !r.is_ruang_dosen && !seen.has(r.nama_ruang) && (hasRoom(r.nama_ruang) || has(r.keterangan) || has(r.label_peta)))
     .sort((a, b) => a.lantai.localeCompare(b.lantai) || byName(a, b))
     .slice(0, 20)
     .map((r) => ({

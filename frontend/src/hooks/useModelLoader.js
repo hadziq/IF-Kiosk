@@ -5,6 +5,9 @@ import { MTLLoader }    from "three/examples/jsm/loaders/MTLLoader";
 import { C, getExt } from "../lib/constants";
 import { asset } from "../lib/config";
 import { applyDefaultCameraView, getMarkerDefaultCameraView } from "../lib/cameraView";
+import { loadData } from "../lib/data";
+import { getMapLabels } from "../lib/directory";
+import { RoomLabels } from "../lib/roomLabels";
 
 export function useModelLoader({
   sceneRef,
@@ -30,6 +33,34 @@ export function useModelLoader({
   const markerRef         = useRef(null);
   const markerSizeRef     = useRef(null);
   const modelSizeRef      = useRef(null);
+  const labelsRef         = useRef(null);
+  const selectedRoomRef   = useRef(null);
+
+  const removeLabels = () => {
+    const labels = labelsRef.current;
+    if (!labels) return;
+    sceneRef.current.onFrame?.delete(labels.onFrame);
+    labels.dispose();
+    labelsRef.current = null;
+  };
+
+  // The room names come from the data, which may still be loading on the
+  // first floor, so the labels appear a moment after the model.
+  const addRoomLabels = (model, floorName) => {
+    loadData()
+      .then((data) => {
+        const { scene, onFrame } = sceneRef.current;
+        if (scene?.getObjectByName("__loaded_model__") !== model) return;
+        removeLabels();
+        const labels = new RoomLabels(model, getMapLabels(data, floorName));
+        labels.select(selectedRoomRef.current);
+        labels.onFrame = (camera, viewportHeight) => labels.update(camera, viewportHeight);
+        onFrame?.add(labels.onFrame);
+        scene.add(labels.group);
+        labelsRef.current = labels;
+      })
+      .catch((err) => console.warn("Room labels unavailable:", err));
+  };
 
   const removeMarker = () => {
     if (markerRef.current) {
@@ -84,22 +115,32 @@ export function useModelLoader({
     group.add(ring);
 
     const canvas = document.createElement("canvas");
-    canvas.width = 512;
+    canvas.width = 768;
     canvas.height = 128;
     const ctx = canvas.getContext("2d");
-    ctx.font = "bold 48px monospace";
+    ctx.font = "bold 44px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.strokeStyle = "rgba(0,0,0,0.8)";
-    ctx.lineWidth = 6;
-    ctx.strokeText("Anda berada di sini", 256, 64);
+    // A dark chip like the floor badge, so the room labels behind it do not
+    // show through the text.
+    const chipWidth = ctx.measureText("Anda berada di sini").width + 56;
+    ctx.beginPath();
+    ctx.roundRect((768 - chipWidth) / 2, 20, chipWidth, 88, 18);
+    ctx.fillStyle = "rgba(8,9,15,0.88)";
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = C.blue;
+    ctx.stroke();
     ctx.fillStyle = C.blue;
-    ctx.fillText("Anda berada di sini", 256, 64);
+    ctx.fillText("Anda berada di sini", 384, 66);
 
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
     const label = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false }),
+      new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false }),
     );
-    label.scale.set(s * 6, s * 1.5, 1);
+    label.renderOrder = 2;
+    label.scale.set(s * 9, s * 1.5, 1);
     label.position.y = s * 3;
     group.add(label);
 
@@ -148,6 +189,9 @@ export function useModelLoader({
     const { scene } = sceneRef.current;
     const model = scene.getObjectByName("__loaded_model__");
     if (!model) return;
+
+    selectedRoomRef.current = roomName;
+    labelsRef.current?.select(roomName);
 
     model.traverse((child) => {
       if (!child.isMesh) return;
@@ -202,6 +246,8 @@ export function useModelLoader({
     const pivot = scene.getObjectByName("__idle_rotation_pivot__");
     if (pivot) scene.remove(pivot);
     removeMarker();
+    removeLabels();
+    selectedRoomRef.current = null;
     const prev = scene.getObjectByName("__loaded_model__");
     if (prev) scene.remove(prev);
     originalMaterials.current = {};
@@ -228,6 +274,7 @@ export function useModelLoader({
     modelSizeRef.current = size;
     setModelRotationBase?.(model.rotation.y);
 
+    if (floorName) addRoomLabels(model, floorName);
     const cameraTarget = floorName === "Lantai 1" ? addYouAreHereMarker() : null;
     applyDefaultCameraView(camera, controls, size, true, cameraTarget);
 
@@ -246,7 +293,9 @@ export function useModelLoader({
         size: { x: size.x.toFixed(2), y: size.y.toFixed(2), z: size.z.toFixed(2) },
       });
 
-      const pending = pendingRoomRef?.current;
+      // Search results carry the CSV name, which may use spaces where the
+      // mesh name has underscores ("Aula Handayani" → Aula_Handayani).
+      const pending = pendingRoomRef?.current?.replace(/ /g, "_");
       if (pending && meshNames.includes(pending)) {
         pendingRoomRef.current = null;
         setActiveRoom(pending);

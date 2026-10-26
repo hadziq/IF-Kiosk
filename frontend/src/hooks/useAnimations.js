@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import * as THREE from "three";
 import { FLOORS, tcFloorByName } from "../lib/constants";
+import { ROOM_LABELS } from "../lib/roomLabels";
 
 export function useAnimations(sceneRef) {
   const floorAnimRef    = useRef(null);
@@ -163,6 +164,10 @@ export function useAnimations(sceneRef) {
     const { scene } = sceneRef.current;
     const model = scene.getObjectByName("__loaded_model__");
     if (!model) { callback(); return; }
+
+    // The labels belong to the floor that is leaving.
+    const labels = scene.getObjectByName(ROOM_LABELS);
+    if (labels) labels.userData.hidden = true;
 
     const selectedIdx = FLOORS.indexOf(selectedFloor);
     if (selectedIdx === -1) { callback(); return; }

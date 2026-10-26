@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { getRoom, search } from "../src/lib/directory.js";
+import { getMapLabels, getRoom, glueShortWords, search } from "../src/lib/directory.js";
 
 const data = {
   version: "test",
@@ -60,4 +60,47 @@ test("search finds a room by its description and by its name with spaces", () =>
 test("search does not list a room twice when it already appears as a schedule", () => {
   assert.deepEqual(search(data, "IF_1", "Senin").map((r) => r.result_type), ["room"]);
   assert.deepEqual(search(data, "Grafika", "Senin").map((r) => r.result_type), ["schedule"]);
+});
+
+test("search finds a room by its map label", () => {
+  const labelled = { ...data, rooms: data.rooms.map((r) => r.nama_ruang === "IF_101" ? { ...r, label_peta: "Ruang Kuliah Besar" } : r) };
+  assert.deepEqual(search(labelled, "kuliah besar", "Rabu").map((r) => r.room_name), ["IF_101"]);
+});
+
+test("getMapLabels labels a floor's rooms by name, by label_peta, or not at all", () => {
+  const rooms = [
+    { nama_ruang: "IF_202",         lantai: "Lantai 2", label_peta: "Mushola" },
+    { nama_ruang: "IF_233",         lantai: "Lantai 2", label_peta: null },
+    { nama_ruang: "Aula Handayani", lantai: "Lantai 2", label_peta: null },
+    { nama_ruang: "IF_237",         lantai: "Lantai 2", label_peta: "-" },
+    { nama_ruang: "IF_101",         lantai: "Lantai 1", label_peta: null },
+  ];
+  assert.deepEqual(getMapLabels({ rooms }, "Lantai 2"), [
+    { meshes: ["IF_202"],         text: "Mushola" },
+    { meshes: ["IF_233"],         text: "IF 233" },
+    { meshes: ["Aula_Handayani"], text: "Aula Handayani" },
+  ]);
+});
+
+test("getMapLabels gives the toilets on one side of a floor one shared pictogram", () => {
+  const rooms = [
+    { nama_ruang: "Toilet_Perempuan_Utara_L2",  lantai: "Lantai 2", label_peta: null },
+    { nama_ruang: "Toilet_Laki-laki_Utara_L2",  lantai: "Lantai 2", label_peta: null },
+    { nama_ruang: "Toilet_Laki-laki_Selatan_L2", lantai: "Lantai 2", label_peta: null },
+    { nama_ruang: "Toilet_Perempuan_Selatan_L2", lantai: "Lantai 2", label_peta: "Toilet Dosen" },
+  ];
+  assert.deepEqual(getMapLabels({ rooms }, "Lantai 2"), [
+    { meshes: ["Toilet_Perempuan_Utara_L2", "Toilet_Laki-laki_Utara_L2"], toilet: ["Laki-laki", "Perempuan"] },
+    { meshes: ["Toilet_Laki-laki_Selatan_L2"], toilet: ["Laki-laki"] },
+    { meshes: ["Toilet_Perempuan_Selatan_L2"], text: "Toilet Dosen" },
+  ]);
+});
+
+test("glueShortWords keeps room codes on one line but lets longer names wrap", () => {
+  const nbsp = " ";
+  assert.equal(glueShortWords("IF 218"), `IF${nbsp}218`);
+  assert.equal(glueShortWords("LP 1"), `LP${nbsp}1`);
+  assert.equal(glueShortWords("Co Working Space IUP"), `Co${nbsp}Working Space IUP`);
+  assert.equal(glueShortWords("Ruang Sidang"), "Ruang Sidang");
+  assert.equal(glueShortWords("NETICS"), "NETICS");
 });

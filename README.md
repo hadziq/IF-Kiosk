@@ -23,6 +23,7 @@ An interactive 3D digital directory kiosk for the Informatics building (Teknik I
 ## Features
 
 - **Interactive 3D building model** — Three.js-rendered floors (`Lantai 1`–`4`) with animated transitions, room highlighting, and camera fly-to for selected rooms.
+- **Room names on the map**: every room carries its name on the 3D model, sized to fit the room, so visitors can find a room by looking before they tap. See [Room labels](#room-labels).
 - **Room directory** — search and browse rooms by floor, see whether a room is a classroom, lab or lecturer office.
 - **Class schedules** — each classroom's schedule for today, from the semester timetable.
 - **Lecturer directory** — search lecturers by name or by their code (e.g. `HF`) and jump straight to their office.
@@ -64,7 +65,7 @@ The phone gets search, the room list of whichever floor the kiosk shows, and a t
 
 | Layer     | Stack |
 |-----------|-------|
-| Frontend  | React 19, Vite, Three.js, Tailwind CSS, `qrcode.react`, `lucide-react` |
+| Frontend  | React 19, Vite, Three.js, `troika-three-text`, Tailwind CSS, `qrcode.react`, `lucide-react` |
 | Data      | CSV files compiled to JSON at build time (`frontend/scripts/build-data.js`) |
 | Relay     | A Cloudflare Worker with one Durable Object per session (`relay/`); Node.js `ws` locally (`backend/`) |
 | Hosting   | GitHub Pages, deployed by GitHub Actions |
@@ -153,7 +154,7 @@ All content is in four CSV files in `data/`. Edit them in Excel, LibreOffice or 
 
 | File | Columns | Notes |
 |---|---|---|
-| `ruangan.csv` | `nama_ruang`, `lantai`, `kelas`, `lab`, `ruang_dosen`, `ruangan`, `keterangan` | `nama_ruang` must equal the mesh name in the floor model; see [Rooms and the 3D model](#rooms-and-the-3d-model). The four flags take `1` for yes and empty for no. |
+| `ruangan.csv` | `nama_ruang`, `lantai`, `kelas`, `lab`, `ruang_dosen`, `ruangan`, `keterangan`, `label_peta` | `nama_ruang` must equal the mesh name in the floor model; see [Rooms and the 3D model](#rooms-and-the-3d-model). The four flags take `1` for yes and empty for no. `label_peta` is the name drawn on the 3D model; see [Room labels](#room-labels). |
 | `dosen.csv` | `kode`, `nama` | `kode` is the lecturer's code from the timetable (`HF`, `RJ`, …). Every other file refers to lecturers by code. |
 | `penghuni.csv` | `nama_ruang`, `kode_dosen` | One row per lecturer per office. Rows for a room appear on the kiosk in file order. |
 | `jadwal.csv` | `hari`, `jam_mulai`, `jam_selesai`, `nama_ruang`, `mata_kuliah`, `dosen_1`, `dosen_2`, `dosen_3` | `hari` is `Senin`…`Jumat`; times are `HH:MM`; `dosen_2` and `dosen_3` may be empty. |
@@ -273,7 +274,28 @@ What the panel shows is driven by the flags on the row, and they combine freely.
 
 Adding a whole floor also means adding its name to `FLOORS` in `frontend/src/lib/constants.js`. If its rooms need a particular order in the sidebar, add a sort to `getRoomSort` in the same file, like the one for `Lantai 3`.
 
-#
+### Room labels
+
+Every row of `ruangan.csv` puts a label on its room in the floor model, so a visitor can find a room by looking at the map before tapping anything.
+Rooms in the model without a row (the `Akses_SPMB_*` markers, `SPMB_*` on Lantai 4) get no label, and the whole-building overview has none.
+
+| `label_peta` | Label on the model |
+|---|---|
+| empty | `nama_ruang` with underscores as spaces, e.g. `IF 218`, `Aula Handayani` |
+| any text | That text, e.g. `Mushola` for `IF_202` |
+| `-` | No label |
+
+- **Labels fit their room.** Each label is sized in metres to fit inside its room, so labels never overlap, and it always faces the screen, so it reads upright however the model is turned.
+  Classrooms and labs get the largest text; the 4 m lecturer offices on Lantai 2 get about half.
+- **Small labels appear as you zoom in.** A label too small on screen to read fades out and fades back in as the visitor zooms toward it, the way map apps hide street names when zoomed out.
+- **Long names wrap at spaces**, but a word of one or two letters or a number stays with its neighbour: `Ruang Sidang` may wrap, `IF 218` and `LP 1` never break.
+  Keep labels short anyway; a long label in a small room is drawn small and only shows when zoomed in.
+- **A selected room's label turns green** and stays readable, while the other labels dim with their rooms.
+- **Toilets share a sign.** The men's and women's toilets on one side of a floor stand next to each other, so they get one restroom pictogram instead of two text labels. This relies on the toilet naming rule above. Giving a toilet a `label_peta` replaces its pictogram with that text.
+
+Labels are drawn by `frontend/src/lib/roomLabels.js`; which rooms get which label is decided by `getMapLabels` in `frontend/src/lib/directory.js`.
+`label_peta` is also searchable from the phone, so a room labelled `Mushola` is found by searching for it.
+
 ## Lecturer photos
 
 Photos live in `frontend/public/picture/` and are named by **lecturer code**: the lecturer with `kode` `HF` in `dosen.csv` has the photo `HF.webp`.

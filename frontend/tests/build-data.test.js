@@ -36,6 +36,14 @@ test("buildData resolves codes and keeps the occupant order of the CSV", () => {
   assert.match(data.version, /^[0-9a-f]{12}$/);
 });
 
+test("buildData keeps a room's map label, and leaves it null when the column is empty or missing", () => {
+  const { data } = buildData(tables({
+    ruangan: parseCsv("nama_ruang,lantai,kelas,lab,ruang_dosen,ruangan,keterangan,label_peta\nIF_101,Lantai 1,1,,,,,\nIF_233,Lantai 2,,,1,,,Ruang Dosen\n"),
+  }));
+  assert.deepEqual(data.rooms.map((r) => r.label_peta), [null, "Ruang Dosen"]);
+  assert.equal(buildData(tables()).data.rooms[0].label_peta, null);
+});
+
 test("buildData turns every silent failure of the old SQL seeds into an error with its line", () => {
   const { errors } = buildData(tables({
     penghuni: parseCsv("nama_ruang,kode_dosen\nIF_233,XX\nIF_999,HF\n"),
