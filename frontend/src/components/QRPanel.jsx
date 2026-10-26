@@ -2,12 +2,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { C } from "../lib/constants";
 
 const wrapStyle = {
-  position: "absolute",
-  bottom: "20px",
-  right: "20px",
-  backdropFilter: "blur(8px)",
   borderRadius: "8px",
-  padding: "20px",
+  padding: "14px",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -16,27 +12,24 @@ const wrapStyle = {
 };
 
 /**
- * Shows a QR code when no phone is connected, or a
- * "Smartphone terhubung" badge when one is paired.
+ * Sits at the foot of the sidebar, clear of the 3D view: a QR code when no
+ * phone is connected, or a "Smartphone terhubung" badge when one is paired.
  */
-export function QROverlay({ mobileUrl, phoneConnected }) {
+export function QRPanel({ mobileUrl, phoneConnected }) {
   if (phoneConnected) {
     return (
       <div style={{
         ...wrapStyle,
-        left: "20px",
-        right: "auto",
-        transform: "none",
         flexDirection: "row",
-        padding: "10px 16px",
-        background: "rgba(8,9,15,0.9)",
+        alignItems: "flex-start",
+        padding: "10px 14px",
         border: `1px solid ${C.green}`,
         boxShadow: C.greenGlow,
       }}>
         <span style={{
           width: "8px", height: "8px", borderRadius: "50%",
           background: C.green, boxShadow: C.greenGlow,
-          flexShrink: 0,
+          flexShrink: 0, marginTop: "4px",
         }} />
         <div>
           <p style={{ fontSize: "11px", color: C.green, letterSpacing: "1px", margin: 0 }}>
@@ -55,19 +48,18 @@ export function QROverlay({ mobileUrl, phoneConnected }) {
   return (
     <div style={{
       ...wrapStyle,
-      background: "rgba(8,9,15,0.9)",
       border: `1px solid ${C.cyan}`,
       boxShadow: C.cyanGlow,
     }}>
       <QRCodeSVG
         value={mobileUrl}
-        size={200}
+        size={180}
         bgColor="transparent"
         fgColor="#ffffff"
         level="M"
       />
       <p style={{
-        fontSize: "14px", color: "#ffffff", letterSpacing: "1.5px",
+        fontSize: "13px", color: "#ffffff", letterSpacing: "1.5px",
         textTransform: "uppercase", margin: 0,
         textShadow: `0 0 8px ${C.cyan}`,
       }}>

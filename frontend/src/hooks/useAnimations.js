@@ -74,14 +74,13 @@ export function useAnimations(sceneRef) {
     defaultRotationYRef.current = rotationY;
   }, []);
 
-  const startIdleRotation = useCallback(() => {
+  const startIdleRotation = useCallback((speed = 0.00035) => {
     const pivot = wrapModelInRotationPivot();
     if (!pivot) return;
 
     cancelRotationAnimation();
 
     const baseRotationY = rotationPivotRef.current?.rotation.y ?? defaultRotationYRef.current;
-    const speed = 0.00035;
     const startTime = performance.now();
 
     const tick = (now) => {

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { C, EXCLUDE, getRoomSort, groupMeshNames } from "../lib/constants";
 import { loadData }     from "../lib/data";
-import { getRoom }      from "../lib/directory";
-import { GESTURES, RELAY_URL } from "../lib/config";
+import { getClassesNow, getRoom } from "../lib/directory";
+import { GESTURES, RELAY_URL, kioskNow } from "../lib/config";
 import { panBy, rotateBy, zoomBy } from "../lib/cameraMoves";
 import { useThreeScene }  from "../hooks/useThreeScene";
 import { useAnimations }  from "../hooks/useAnimations";
@@ -12,16 +12,32 @@ import { useModelLoader } from "../hooks/useModelLoader";
 import { Sidebar }        from "../components/Sidebar";
 import { SchedulePanel }  from "../components/SchedulePanel";
 import { useTVWebSocket } from "../hooks/useWebSocket";
-import { QROverlay }      from "../components/QROverlay";
+import { QRPanel }        from "../components/QRPanel";
+import { NowBoard }       from "../components/NowBoard";
 
 // How often the kiosk checks whether a new data version has been deployed.
 const DATA_CHECK_MS = 10 * 60 * 1000;
+
+// The floor the kiosk stands on. After IDLE_MS untouched the model starts to
+// turn and, on this floor, the board of classes in progress appears; after
+// HOME_AFTER_MS on any other view the kiosk comes back here.
+const HOME_FLOOR    = "Lantai 1";
+const IDLE_MS       = 10 * 1000;
+const HOME_AFTER_MS = 60 * 1000;
+// While the board shows, the model turns slower so its badges stay readable,
+// and the board points at each class in turn.
+const BOARD_ROTATION_SPEED = 0.00012;
+const FOCUS_MS = 6000;
+const CLOCK_MS = 15 * 1000;
 
 export default function Kiosk() {
   const mountRef           = useRef(null);
   const lastActiveFloorRef = useRef(null);
   const pendingRoomRef     = useRef(null);
   const idleRotationTimerRef = useRef(null);
+  const homeTimerRef         = useRef(null);
+  const activeFloorRef       = useRef(null);
+  const viewRef              = useRef("floors");
 
   const [status,       setStatus]       = useState("idle");
   const [modelInfo,    setModelInfo]    = useState(null);
@@ -32,6 +48,10 @@ export default function Kiosk() {
   const [roomData,     setRoomData]     = useState(null);
   const [schedLoading, setSchedLoading] = useState(false);
   const [schedError,   setSchedError]   = useState("");
+  const [idle,         setIdle]         = useState(false);
+  const [kioskData,    setKioskData]    = useState(null);
+  const [clock,        setClock]        = useState(kioskNow);
+  const [focusIndex,   setFocusIndex]   = useState(0);
 
   // ── Three.js scene (renderer, camera, lights, controls) ──────────
   const sceneRef = useThreeScene(mountRef);
@@ -45,13 +65,14 @@ export default function Kiosk() {
     animateFloorIntro,
     startIdleRotation,
     restoreModelRotation,
+    snapModelRotation,
     cancelRotationAnimation,
     setModelRotationBase,
   } =
     useAnimations(sceneRef);
 
   // ── Model loading ─────────────────────────────────────────────────
-  const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom } = useModelLoader({
+  const { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, setLiveRooms } = useModelLoader({
     sceneRef, floorAnimRef, isAnimatingRef,
     animateFloorIntro, animateTCIntro, cancelRotationAnimation, setModelRotationBase,
     lastActiveFloorRef, pendingRoomRef,
@@ -103,14 +124,14 @@ export default function Kiosk() {
   const handleDisconnectRef = useRef(null);
   const resetToDisconnectedView = () => {
     setActiveRoom(null);
-    setActiveFloor("Lantai 1");
-    loadFloorObjMtl("Lantai 1", true);
+    setActiveFloor(HOME_FLOOR);
+    loadFloorObjMtl(HOME_FLOOR, true);
   };
   handleDisconnectRef.current = resetToDisconnectedView;
 
   const { mobileUrl, phoneConnected, sendState } = useTVWebSocket({
     onCmd:             (action, payload) => handleCmdRef.current(action, payload),
-    onPhoneConnect:    () => sendStateRef.current(),
+    onPhoneConnect:    () => { setIdle(false); sendStateRef.current(); },
     onPhoneDisconnect: () => handleDisconnectRef.current(),
   });
 
@@ -119,24 +140,39 @@ export default function Kiosk() {
     restoreModelRotation();
   }, [phoneConnected, restoreModelRotation]);
 
+  useEffect(() => { activeFloorRef.current = activeFloor; viewRef.current = view; }, [activeFloor, view]);
+
   useEffect(() => {
     const clearIdleTimer = () => {
-      if (idleRotationTimerRef.current) {
-        clearTimeout(idleRotationTimerRef.current);
-        idleRotationTimerRef.current = null;
-      }
+      clearTimeout(idleRotationTimerRef.current);
+      clearTimeout(homeTimerRef.current);
+      idleRotationTimerRef.current = null;
+      homeTimerRef.current = null;
     };
+
+    const atHome = () => viewRef.current === "rooms" && activeFloorRef.current === HOME_FLOOR;
 
     const armIdleRotation = () => {
       clearIdleTimer();
       if (phoneConnected) return;
       idleRotationTimerRef.current = setTimeout(() => {
-        startIdleRotation();
-      }, 10000);
+        startIdleRotation(atHome() ? BOARD_ROTATION_SPEED : undefined);
+        setClock(kioskNow());
+        setFocusIndex(0);
+        setIdle(true);
+      }, IDLE_MS);
+      homeTimerRef.current = setTimeout(() => {
+        if (atHome()) return;
+        snapModelRotation();
+        setIdle(false);
+        handleDisconnectRef.current();
+        armIdleRotation();
+      }, HOME_AFTER_MS);
     };
 
     const handleActivity = () => {
       if (phoneConnected) return;
+      setIdle(false);
       restoreModelRotation();
       armIdleRotation();
     };
@@ -154,7 +190,31 @@ export default function Kiosk() {
       window.removeEventListener("mousemove", handleActivity);
       window.removeEventListener("touchstart", handleActivity);
     };
-  }, [phoneConnected, startIdleRotation, restoreModelRotation]);
+  }, [phoneConnected, startIdleRotation, restoreModelRotation, snapModelRotation]);
+
+  // ── Idle board: classes in progress on the home floor ────────────
+  useEffect(() => { loadData().then(setKioskData).catch(() => {}); }, []);
+
+  const boardShown = idle && !phoneConnected && view === "rooms" && activeFloor === HOME_FLOOR && status === "success" && !!kioskData;
+  const classesNow = useMemo(() => (kioskData ? getClassesNow(kioskData, HOME_FLOOR, clock) : null), [kioskData, clock]);
+  const running = boardShown ? classesNow.running : [];
+  const focusRoom = running.length ? running[focusIndex % running.length].nama_ruang : null;
+  const liveKey = running.map((c) => `${c.nama_ruang}=${c.short}`).join("|");
+
+  useEffect(() => {
+    if (!boardShown) return;
+    const clockId = setInterval(() => setClock(kioskNow()), CLOCK_MS);
+    const focusId = setInterval(() => setFocusIndex((i) => i + 1), FOCUS_MS);
+    return () => { clearInterval(clockId); clearInterval(focusId); };
+  }, [boardShown]);
+
+  const applyLiveRef = useRef(null);
+  applyLiveRef.current = () => {
+    if (!boardShown) { setLiveRooms(null); return; }
+    if (activeRoom) { setActiveRoom(null); highlightRoom(null); }
+    setLiveRooms(new Map(running.map((c) => [c.nama_ruang.replace(/ /g, "_"), c.short])), focusRoom);
+  };
+  useEffect(() => { applyLiveRef.current(); }, [boardShown, liveKey, focusRoom, modelInfo]);
 
   sendStateRef.current = () => {
     const rooms = groupMeshNames(modelInfo?.meshNames?.filter(n => !EXCLUDE.test(n)).sort(getRoomSort(activeFloor)) || []);
@@ -210,6 +270,7 @@ export default function Kiosk() {
         onFloorSelect={(f) => { setActiveFloor(f); animateFloorTransition(f, () => loadFloorObjMtl(f)); }}
         onBack={() => { lastActiveFloorRef.current = activeFloor; setActiveFloor(null); setView("floors"); loadTC(); }}
         onRoomSelect={(name) => { setActiveRoom(name); highlightRoom(name); }}
+        footer={<QRPanel mobileUrl={mobileUrl} phoneConnected={phoneConnected} />}
       />
 
       {/* 3D viewport */}
@@ -222,7 +283,9 @@ export default function Kiosk() {
           </div>
         )}
 
-        <QROverlay mobileUrl={mobileUrl} phoneConnected={phoneConnected} />
+        {boardShown && (
+          <NowBoard floor={HOME_FLOOR} info={classesNow} now={clock} focusRoom={focusRoom} />
+        )}
 
         {phoneConnected && view === "rooms" && activeFloor && activeFloor !== "Lantai 1" && status === "success" && (
           <div style={{

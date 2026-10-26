@@ -35,6 +35,7 @@ export function useModelLoader({
   const modelSizeRef      = useRef(null);
   const labelsRef         = useRef(null);
   const selectedRoomRef   = useRef(null);
+  const liveRef           = useRef(null);
 
   const removeLabels = () => {
     const labels = labelsRef.current;
@@ -54,6 +55,7 @@ export function useModelLoader({
         removeLabels();
         const labels = new RoomLabels(model, getMapLabels(data, floorName));
         labels.select(selectedRoomRef.current);
+        if (liveRef.current?.model === model) labels.setLive(liveRef.current.badges, liveRef.current.focus);
         labels.onFrame = (camera, viewportHeight) => labels.update(camera, viewportHeight);
         onFrame?.add(labels.onFrame);
         scene.add(labels.group);
@@ -185,11 +187,105 @@ export function useModelLoader({
     setStatus("error");
   };
 
+  // Rooms with a class in progress turn cyan over a cyan floor plate, and the
+  // focused one pulses.
+  // Only the materials set here are undone, so a room selected meanwhile
+  // keeps its highlight.
+  const clearLive = () => {
+    const live = liveRef.current;
+    if (!live) return;
+    sceneRef.current.onFrame?.delete(live.onFrame);
+    for (const { mesh, material, original } of live.meshes) {
+      if (mesh.material === material) mesh.material = original;
+    }
+    for (const plate of live.plates) {
+      plate.removeFromParent();
+      plate.geometry.dispose();
+      plate.material.dispose();
+    }
+    labelsRef.current?.setLive(null);
+    liveRef.current = null;
+  };
+
+  /**
+   * Marks the rooms with a class in progress: `badges` maps a mesh name to
+   * the short course name shown above its label; null clears it all.
+   */
+  const setLiveRooms = (badges, focus = null) => {
+    const { scene, onFrame } = sceneRef.current;
+    const model = scene?.getObjectByName("__loaded_model__");
+    const key = badges ? [...badges].join("|") : "";
+    const live = liveRef.current;
+    if (live && live.model === model && live.key === key) {
+      live.focus = focus;
+      labelsRef.current?.setLive(badges, focus);
+      return;
+    }
+    clearLive();
+    if (!model || !badges?.size) return;
+
+    // The rooms' walls are near white, so an emissive glow would clip to
+    // white; blend the colour itself instead.
+    const liveColor = new THREE.Color(C.live);
+    const tint = (mat) => {
+      const t = mat.clone();
+      t.userData.baseColor = t.color?.clone();
+      return t;
+    };
+    const meshes = [];
+    const boxes = new Map();
+    model.traverse((child) => {
+      if (!child.isMesh || !badges.has(child.name)) return;
+      const original = child.material;
+      child.material = Array.isArray(original) ? original.map(tint) : tint(original);
+      meshes.push({ mesh: child, material: child.material, original, room: child.name });
+      // Bounds in the model's frame, as for the room labels.
+      if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+      const box = boxes.get(child.name) ?? new THREE.Box3();
+      boxes.set(child.name, box.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrix)));
+    });
+
+    // A plate just above the floor of each room, so the whole room reads as
+    // in use and not only its walls.
+    const plates = [...boxes].map(([room, box]) => {
+      const size = box.getSize(new THREE.Vector3());
+      const plate = new THREE.Mesh(
+        new THREE.PlaneGeometry(size.x, size.z),
+        new THREE.MeshBasicMaterial({ color: liveColor, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false }),
+      );
+      plate.rotation.x = -Math.PI / 2;
+      plate.position.set((box.min.x + box.max.x) / 2, box.min.y + 0.05, (box.min.z + box.max.z) / 2);
+      plate.userData.room = room;
+      model.add(plate);
+      return plate;
+    });
+
+    const next = { model, key, badges, focus, meshes, plates };
+    next.onFrame = () => {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 250);
+      for (const { material, room } of meshes) {
+        const amount = room === next.focus ? 0.55 + 0.35 * pulse : 0.55;
+        for (const m of Array.isArray(material) ? material : [material]) {
+          if (m.userData.baseColor) m.color.copy(m.userData.baseColor).lerp(liveColor, amount);
+        }
+      }
+      for (const plate of plates) {
+        plate.material.opacity = plate.userData.room === next.focus ? 0.3 + 0.35 * pulse : 0.3;
+      }
+    };
+    onFrame?.add(next.onFrame);
+    liveRef.current = next;
+    labelsRef.current?.setLive(badges, focus);
+  };
+
   const highlightRoom = (roomName) => {
     const { scene } = sceneRef.current;
     const model = scene.getObjectByName("__loaded_model__");
     if (!model) return;
 
+    // Selecting a room ends the idle board; untint first so the materials
+    // saved below are the model's own.
+    clearLive();
     selectedRoomRef.current = roomName;
     labelsRef.current?.select(roomName);
 
@@ -246,6 +342,7 @@ export function useModelLoader({
     const pivot = scene.getObjectByName("__idle_rotation_pivot__");
     if (pivot) scene.remove(pivot);
     removeMarker();
+    clearLive();
     removeLabels();
     selectedRoomRef.current = null;
     const prev = scene.getObjectByName("__loaded_model__");
@@ -408,5 +505,5 @@ export function useModelLoader({
     }
   };
 
-  return { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, applyMarkerCameraView };
+  return { loadTC, loadFloorObjMtl, loadByFiles, highlightRoom, setLiveRooms, applyMarkerCameraView };
 }

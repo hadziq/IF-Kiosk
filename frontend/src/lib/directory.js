@@ -98,6 +98,83 @@ export const glueShortWords = (label) =>
   label.replace(/(\S+) (?=(\S+))/g, (match, before, after) =>
     [before, after].some((word) => word.length <= 2 || /\d/.test(word)) ? `${before} ` : match);
 
+// Course names in the timetable carry the programme before an underscore and
+// the class letter at the end: "IF_Sistem Basis Data C (EN)".
+const COURSE = /^(?:([A-Z0-9]+)_)?(.*?)(?:\s+([A-Z]))?(?:\s*\(EN\))?$/;
+// A name up to this long fits on the map as it is; a longer one is shortened
+// to its initials.
+const SHORT_NAME = 14;
+const SKIP_WORDS = new Set(["dan", "untuk", "di", "dalam", "&", "-", "/"]);
+
+const initials = (name) => {
+  const parts = [];
+  let run = "";
+  for (const word of name.replace(/^Topik Dalam\s+/i, "TD ").split(/\s+/)) {
+    if (!/[A-Za-z]/.test(word) || SKIP_WORDS.has(word.toLowerCase())) continue;
+    if (word === word.toUpperCase()) {
+      // Already an abbreviation ("TD", "IUP"): keep it as its own part.
+      if (run) parts.push(run);
+      parts.push(word);
+      run = "";
+    } else {
+      run += word[0].toUpperCase();
+    }
+  }
+  if (run) parts.push(run);
+  return parts.join(" ");
+};
+
+/**
+ * Splits a timetable course name into { program, name, kelas, english,
+ * short }. `short` is what fits on the 3D map: the name itself when short,
+ * otherwise its initials, with the class letter, e.g. "SBD C".
+ */
+export function parseCourse(mataKuliah) {
+  const [, program = null, rawName, kelas = null] = mataKuliah.trim().match(COURSE);
+  const name = rawName.trim();
+  const english = /\(EN\)\s*$/.test(mataKuliah);
+  const base = name.length <= SHORT_NAME ? name : initials(name.split(" / ")[0]) || name;
+  return { program, name, kelas, english, short: kelas ? `${base} ${kelas}` : base };
+}
+
+const DAY_OF_WEEK = [null, ...DAYS, null]; // Date#getDay(): 0 is Sunday
+const toMinutes = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+
+/**
+ * The classes running on one floor at `now`, and the next ones to start, for
+ * the kiosk's idle board. Returns { day, running, next }, where `next` is
+ * { hari, jam_mulai, today, classes } or null when the timetable is empty.
+ * Each class is a schedule row plus its room, lecturer codes and parseCourse().
+ */
+export function getClassesNow(data, floor, now) {
+  const rooms = new Set(data.rooms.filter((r) => r.lantai === floor && r.is_kelas).map((r) => r.nama_ruang));
+  const onFloor = data.jadwal.filter((j) => rooms.has(j.nama_ruang));
+  const row = (j) => ({
+    ...scheduleRow(data)(j),
+    nama_ruang: j.nama_ruang,
+    kode_dosen: j.dosen,
+    ...parseCourse(j.mata_kuliah),
+  });
+
+  const day = DAY_OF_WEEK[now.getDay()];
+  const minute = now.getHours() * 60 + now.getMinutes();
+  const running = onFloor
+    .filter((j) => j.hari === day && toMinutes(j.jam_mulai) <= minute && minute < toMinutes(j.jam_selesai))
+    .sort(byName)
+    .map(row);
+
+  let next = null;
+  for (let offset = 0; offset < 7 && !next; offset++) {
+    const hari = DAY_OF_WEEK[(now.getDay() + offset) % 7];
+    const later = onFloor.filter((j) => j.hari === hari && (offset > 0 || toMinutes(j.jam_mulai) > minute));
+    if (!later.length) continue;
+    const jam_mulai = later.reduce((min, j) => (j.jam_mulai < min ? j.jam_mulai : min), later[0].jam_mulai);
+    next = { hari, jam_mulai, today: offset === 0, classes: later.filter((j) => j.jam_mulai === jam_mulai).sort(byName).map(row) };
+  }
+
+  return { day, running, next };
+}
+
 const byName = (a, b) => a.nama_ruang.localeCompare(b.nama_ruang);
 
 /**

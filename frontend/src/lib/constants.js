@@ -10,6 +10,10 @@ const BLUE_RGB = "91,127,255";
 const BLUE_GLOW_RGB = "91,127,255";
 const GREEN = "#22c55e";
 const GREEN_RGB = "34,197,94";
+// Cyan stands out against both the terracotta floor and the white walls of
+// the floor models.
+const LIVE = "#22d3ee";
+const LIVE_RGB = "34,211,238";
 
 export const C = {
   bg:        "#060d0f",
@@ -21,6 +25,10 @@ export const C = {
   cyanGlow:  `0 0 12px rgba(${BLUE_GLOW_RGB},0.55)`,
   green:     GREEN,
   greenGlow: `0 0 12px rgba(${GREEN_RGB},0.55)`,
+  // Classes in progress, on the idle board and the 3D map.
+  live:      LIVE,
+  liveDim:   `rgba(${LIVE_RGB},0.12)`,
+  liveGlow:  `0 0 12px rgba(${LIVE_RGB},0.45)`,
   blue:      BLUE,
   blueDim:   `rgba(${BLUE_RGB},0.16)`,
   blueGlow:  `0 0 12px rgba(${BLUE_GLOW_RGB},0.55)`,
