@@ -166,7 +166,7 @@ GALAT       jadwal.csv:41: kode dosen "HFF" tidak ada di dosen.csv
 GALAT       ruangan.csv:12: tidak ada mesh bernama IF_1O5 di model Lantai 1.obj; nama_ruang harus sama persis dengan nama mesh
 ```
 
-Problems that do not break the kiosk are printed as `peringatan` (warnings) and the build continues: a lecturer without a photo, a mesh without a row in `ruangan.csv`, or two classes overlapping in the same room.
+Problems that do not break the kiosk are printed as `peringatan` (warnings) and the build continues: a lecturer without a photo, a mesh without a row in `ruangan.csv`, two classes overlapping in the same room, or one lecturer teaching in two rooms at overlapping times.
 
 **Replacing the timetable each semester** means replacing the rows of `jadwal.csv`. Add any new lecturers to `dosen.csv` first.
 
@@ -251,7 +251,7 @@ When a floor loads, `useModelLoader` collects every named mesh. `Sidebar` then d
 - **`nama_ruang` must equal the mesh name.** The match is case-sensitive: a mesh called `NETICS` will not find a row called `Netics`. The data build checks every row against its floor's `.obj` and stops if the mesh is missing.
 - **Spaces and underscores are interchangeable.** OBJ exporters turn spaces into underscores, so `Aula_Handayani` matches a row named `Aula Handayani`. Buttons display underscores as spaces.
 - **`lantai` must be the floor's file name**, e.g. `Lantai 3`. Search results use it to decide which model to load before jumping to the room.
-- **A mesh with no matching row is a warning, not an error.** The panel shows the room name and nothing else. The only such meshes today are the two small `Akses_SPMB_*` markers on Lantai 3, which are not rooms.
+- **A mesh with no matching row is a warning, not an error.** The panel shows the room name and nothing else. The only such meshes today are the two small `Akses_SPMB_*` markers on Lantai 3, which are not rooms, and `SPMB_Jatim` and `SPMB_Surabaya` on Lantai 4.
 - **Mesh names must be unique across floors**, because `nama_ruang` is unique. Rooms that repeat on every floor carry a floor suffix. The toilets follow `Toilet_<Laki-laki|Perempuan>_<Utara|Selatan>_L<floor>`, e.g. `Toilet_Perempuan_Selatan_L2`. In the models, north (*Utara*) is the side with the IF_101 / IF_201 / RPL row, and south (*Selatan*) is the side with IF_110 / IF_222 / LP_2.
 - **`TC.obj` names are never looked up.** The overview model has its own, older labels (`Toilet_Cewe_A`, `IF_114`, …). Only the four floor models need to agree with `ruangan.csv`.
 
