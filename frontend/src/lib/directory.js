@@ -39,20 +39,23 @@ export function getRoom(data, name) {
   };
 }
 
-// Toilets follow Toilet_<Laki-laki|Perempuan>_<Utara|Selatan>_L<floor>,
-// Toilet_<Mahasiswa|Mahasiswi>_L<floor><U|S> or
-// Toilet_Pegawai_<Laki-laki|Perempuan>_<Utara|Selatan>
+// Toilets use the names from ruangan.csv; the former naming formats remain
+// supported for older model or data files.
 // (README, "Rooms and the 3D model").
-const TOILET = /^Toilet_(?:(Laki-laki|Perempuan)_(Utara|Selatan)_L\d+|(Mahasiswa|Mahasiswi)_L\d+([US])|Pegawai_(Laki-laki|Perempuan)_(Utara|Selatan))$/;
+const TOILET = /^Toilet_(?:(Utara|Selatan)_L\d+_(Mahasiswa|Mahasiswi)|(Utara|Selatan)_Pegawai_(Laki-laki|Perempuan)|(Laki-laki|Perempuan)_(Utara|Selatan)_L\d+|(Mahasiswa|Mahasiswi)_L\d+([US])|Pegawai_(Laki-laki|Perempuan)_(Utara|Selatan))$/;
 const GENDER = { Mahasiswa: "Laki-laki", Mahasiswi: "Perempuan" };
 const SIDE = { U: "Utara", S: "Selatan" };
 
 function parseToilet(mesh) {
   const m = mesh.match(TOILET);
   if (!m) return null;
+  if (m[1]) return { side: m[1], gender: GENDER[m[2]] };
+  if (m[3]) return { side: m[3], gender: m[4] };
+  if (m[5]) return { gender: m[5], side: m[6] };
+  if (m[7]) return { gender: GENDER[m[7]], side: SIDE[m[8]] };
   return {
-    gender: m[1] ?? GENDER[m[3]] ?? m[5],
-    side: m[2] ?? SIDE[m[4]] ?? m[6],
+    gender: m[9],
+    side: m[10],
   };
 }
 

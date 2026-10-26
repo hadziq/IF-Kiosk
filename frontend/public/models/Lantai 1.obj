@@ -53550,8 +53550,8 @@ vt 0.0000 0.8333 0.0000
 vt 0.0000 0.3333 0.0000
 # 23 texture coords
 
-o Toilet_Mahasiswa_L1U
-g Toilet_Mahasiswa_L1U
+o Toilet_Utara_L1_Mahasiswa
+g Toilet_Utara_L1_Mahasiswa
 usemtl Tembok
 s 2
 f 19856/678/1989 19857/679/1990 19858/680/1991 19859/681/1992 
@@ -54659,8 +54659,8 @@ vt 0.5000 0.5000 0.0000
 vt 0.0000 0.7500 0.0000
 # 13 texture coords
 
-o Toilet_Mahasiswi_L1U
-g Toilet_Mahasiswi_L1U
+o Toilet_Utara_L1_Mahasiswi
+g Toilet_Utara_L1_Mahasiswi
 usemtl Tembok
 s 2
 f 20272/701/2383 20273/702/2384 20274/703/2385 20275/704/2386 
@@ -58969,8 +58969,8 @@ vt 0.0000 0.8333 0.0000
 vt 0.0000 0.3333 0.0000
 # 23 texture coords
 
-o Toilet_Mahasiswa_L1S
-g Toilet_Mahasiswa_L1S
+o Toilet_Selatan_L1_Mahasiswa
+g Toilet_Selatan_L1_Mahasiswa
 usemtl Tembok
 s 2
 f 21715/753/2737 21714/752/2736 21713/751/2735 21712/750/2734 
@@ -60073,8 +60073,8 @@ vt 0.5000 0.5000 0.0000
 vt 0.0000 0.7500 0.0000
 # 13 texture coords
 
-o Toilet_Mahasiswi_L1S
-g Toilet_Mahasiswi_L1S
+o Toilet_Selatan_L1_Mahasiswi
+g Toilet_Selatan_L1_Mahasiswi
 usemtl Tembok
 s 2
 f 22131/776/3134 22130/775/3133 22129/774/3132 22128/773/3131 
