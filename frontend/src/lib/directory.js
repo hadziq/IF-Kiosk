@@ -39,9 +39,22 @@ export function getRoom(data, name) {
   };
 }
 
-// Toilets follow Toilet_<Laki-laki|Perempuan>_<Utara|Selatan>_L<floor>
+// Toilets follow Toilet_<Laki-laki|Perempuan>_<Utara|Selatan>_L<floor>,
+// Toilet_<Mahasiswa|Mahasiswi>_L<floor><U|S> or
+// Toilet_Pegawai_<Laki-laki|Perempuan>_<Utara|Selatan>
 // (README, "Rooms and the 3D model").
-const TOILET = /^Toilet_(Laki-laki|Perempuan)_(Utara|Selatan)_L\d+$/;
+const TOILET = /^Toilet_(?:(Laki-laki|Perempuan)_(Utara|Selatan)_L\d+|(Mahasiswa|Mahasiswi)_L\d+([US])|Pegawai_(Laki-laki|Perempuan)_(Utara|Selatan))$/;
+const GENDER = { Mahasiswa: "Laki-laki", Mahasiswi: "Perempuan" };
+const SIDE = { U: "Utara", S: "Selatan" };
+
+function parseToilet(mesh) {
+  const m = mesh.match(TOILET);
+  if (!m) return null;
+  return {
+    gender: m[1] ?? GENDER[m[3]] ?? m[5],
+    side: m[2] ?? SIDE[m[4]] ?? m[6],
+  };
+}
 
 /**
  * The labels drawn on a floor's 3D model, one per room in the data, as
@@ -56,12 +69,12 @@ export function getMapLabels(data, floor) {
   for (const room of data.rooms) {
     if (room.lantai !== floor || room.label_peta === "-") continue;
     const mesh = meshKey(room.nama_ruang);
-    const toilet = !room.label_peta && mesh.match(TOILET);
+    const toilet = !room.label_peta && parseToilet(mesh);
     if (!toilet) {
       labels.push({ meshes: [mesh], text: room.label_peta ?? displayName(room.nama_ruang) });
       continue;
     }
-    const [, gender, side] = toilet;
+    const { gender, side } = toilet;
     let group = toilets.get(side);
     if (!group) {
       toilets.set(side, (group = { meshes: [], toilet: [] }));

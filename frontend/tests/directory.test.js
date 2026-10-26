@@ -104,3 +104,16 @@ test("glueShortWords keeps room codes on one line but lets longer names wrap", (
   assert.equal(glueShortWords("Ruang Sidang"), "Ruang Sidang");
   assert.equal(glueShortWords("NETICS"), "NETICS");
 });
+
+test("getMapLabels groups toilets named Mahasiswa/Mahasiswi and Pegawai into pictograms", () => {
+  const rooms = [
+    { nama_ruang: "Toilet_Mahasiswi_L1U", lantai: "Lantai 1", label_peta: null },
+    { nama_ruang: "Toilet_Mahasiswa_L1U", lantai: "Lantai 1", label_peta: null },
+    { nama_ruang: "Toilet_Pegawai_Perempuan_Selatan", lantai: "Lantai 1", label_peta: null },
+    { nama_ruang: "Toilet_Pegawai_Laki-laki_Selatan", lantai: "Lantai 1", label_peta: null },
+  ];
+  assert.deepEqual(getMapLabels({ rooms }, "Lantai 1"), [
+    { meshes: ["Toilet_Mahasiswi_L1U", "Toilet_Mahasiswa_L1U"], toilet: ["Laki-laki", "Perempuan"] },
+    { meshes: ["Toilet_Pegawai_Perempuan_Selatan", "Toilet_Pegawai_Laki-laki_Selatan"], toilet: ["Laki-laki", "Perempuan"] },
+  ]);
+});
