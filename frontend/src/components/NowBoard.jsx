@@ -142,7 +142,7 @@ export function NowBoard({ floor, info, now, focusRoom }) {
       </div>
 
       <p style={{ padding: "10px 18px 12px", borderTop: `1px solid ${C.border}`, fontSize: "11px", color: C.sub, letterSpacing: "0.5px" }}>
-        Sesuai jadwal semester · sentuh layar untuk menjelajah
+        Sesuai jadwal semester · scan QR di kiri bawah untuk mengontrol papan ini dan menjelajah
       </p>
     </div>
   );
