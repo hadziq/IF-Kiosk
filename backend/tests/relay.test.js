@@ -6,6 +6,9 @@
 const WebSocket = require("ws");
 
 const REMOTE = process.env.RELAY_TEST_URL;
+// The cases describe the default setup, so a developer's backend/.env must not
+// change it. dotenv never overrides a variable that is already set.
+if (!REMOTE) process.env.PUBLIC_FRONTEND_URL = "";
 const server = REMOTE ? null : require("../index");
 
 function getWsUrl(path) {
