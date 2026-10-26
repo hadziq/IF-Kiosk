@@ -28,7 +28,7 @@ Pairing ponsel sudah dicoba Hadziq di situs publik dan berhasil.
 | [#2](https://github.com/hadziq/IF-Kiosk/pull/2) | Fase 2: relay di Cloudflare. Protokol bertambah ping/pong dan `session ended`. |
 | [#3](https://github.com/hadziq/IF-Kiosk/pull/3) | Gestur sentuh gaya peta (default), skema lama di balik `?gestures=orbit`. |
 | [#5](https://github.com/hadziq/IF-Kiosk/pull/5) | Jadwal Gasal 2026/27; `npm test` bisa jalan di Windows. |
-| PR berikutnya | Foto `BJ`, `IG`, `MN`; peringatan dosen yang mengajar di dua ruangan pada jam yang sama; penghuni IF_235 dan Lounge. |
+| [#6](https://github.com/hadziq/IF-Kiosk/pull/6) | Foto `BJ`, `IG`, `MN`; peringatan dosen yang mengajar di dua ruangan pada jam yang sama; penghuni IF_235 dan Lounge. |
 
 ### Keputusan yang sudah diambil
 
