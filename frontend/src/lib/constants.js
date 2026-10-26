@@ -1,6 +1,7 @@
 export const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export const FLOORS = ["Lantai 1", "Lantai 2", "Lantai 3", "Lantai 4"];
+export const MENU_FLOORS = FLOORS.filter((floor) => floor !== "Lantai 4");
 
 export function getExt(name) { return name.split(".").pop().toLowerCase(); }
 

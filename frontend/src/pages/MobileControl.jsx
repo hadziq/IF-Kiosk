@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Search, X, LoaderCircle, CheckCircle, ChevronRight } from "lucide-react";
-import { C, DAYS, FLOORS, EXCLUDE, displayName } from "../lib/constants";
+import { C, DAYS, MENU_FLOORS, EXCLUDE, displayName } from "../lib/constants";
 import { GESTURES, RELAY_URL } from "../lib/config";
 import { loadData } from "../lib/data";
 import { search } from "../lib/directory";
@@ -416,7 +416,7 @@ export default function MobileControl() {
               )}
             </div>
 
-            {tvView === "floors" && !awaitingRooms && FLOORS.map((f) => (
+            {tvView === "floors" && !awaitingRooms && MENU_FLOORS.map((f) => (
               <button key={f} onClick={() => { setSelectedRoom(null); setAwaitingRooms(true); send("selectFloor", f); }} style={btnStyle(tvFloor === f, "cyan")}>
                 {f}
               </button>

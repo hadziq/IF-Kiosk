@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { C, FLOORS, EXCLUDE, getRoomSort, displayName, groupMeshNames } from "../lib/constants";
+import { C, MENU_FLOORS, EXCLUDE, getRoomSort, displayName, groupMeshNames } from "../lib/constants";
 
 function sidebarLabel(text) {
   return (
@@ -76,7 +76,7 @@ export function Sidebar({
         <div>
           {sidebarLabel("Pilih Lantai")}
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {FLOORS.map((f) => (
+            {MENU_FLOORS.map((f) => (
               <FloorBtn key={f} label={f} active={activeFloor === f}
                 onClick={() => {
                   if (isAnimatingRef.current) return;
